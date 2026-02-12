@@ -1,0 +1,20 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+
+    level: 6
+
+    ignoreErrors:
+        # Laravel magic methods
+        - '#Call to an undefined method [a-zA-Z0-9\\_]+::[a-zA-Z0-9_]+\(\)#'
+
+    excludePaths:
+        - vendor/
+        - storage/
+        - bootstrap/cache/
+
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false

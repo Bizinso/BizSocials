@@ -1,0 +1,11 @@
+node_modules
+dist
+*.local
+.env
+.env.*
+!.env.example
+
+# Playwright
+e2e/.auth/
+e2e/test-results/
+e2e/playwright-report/
