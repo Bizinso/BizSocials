@@ -57,6 +57,14 @@ jobs:
           restore-keys: |
             composer-${{ runner.os }}-${{ matrix.php }}-
 
+      - name: Prepare Laravel directories
+  	run: |
+    	mkdir -p backend/bootstrap/cache
+    	mkdir -p backend/storage/framework
+    	mkdir -p backend/storage/logs
+    	chmod -R 775 backend/storage
+    	chmod -R 775 backend/bootstrap/cache
+
       - name: Install Composer dependencies
         working-directory: backend
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
