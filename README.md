@@ -42,13 +42,54 @@ BizSocials is a comprehensive B2B social media management platform built with La
 
 ## Getting Started
 
+### Quick Start with Docker (Recommended)
+
+The easiest way to get started is using Docker:
+
+```bash
+# One-command setup
+make setup
+```
+
+Or use the quick start script:
+
+```bash
+./quick-start.sh
+```
+
+This will:
+- Set up all services (MySQL, Redis, Meilisearch, etc.)
+- Install dependencies
+- Run migrations
+- Seed the database
+- Start the application
+
+**Access the application:**
+- API: http://localhost:8080
+- MailHog (Email testing): http://localhost:8025
+- MinIO (S3 storage): http://localhost:9001
+- Meilisearch: http://localhost:7700
+
+**Run tests:**
+```bash
+make test           # All tests
+make test-unit      # Unit tests only
+make test-feature   # Feature tests only
+make test-properties # Property tests only
+```
+
+For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
+
+### Manual Installation (Without Docker)
+
 ### Prerequisites
 
-- PHP 8.2 or higher
+- PHP 8.3 or higher
 - Composer
 - Node.js 20 or higher
 - MySQL 8.0
 - Redis
+- Meilisearch
 
 ### Installation
 
