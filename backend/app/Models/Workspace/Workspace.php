@@ -184,6 +184,16 @@ final class Workspace extends Model
     }
 
     /**
+     * Get all WhatsApp Business Accounts for this workspace's tenant.
+     *
+     * @return HasMany<\App\Models\WhatsApp\WhatsAppBusinessAccount>
+     */
+    public function whatsappBusinessAccounts(): HasMany
+    {
+        return $this->hasMany(\App\Models\WhatsApp\WhatsAppBusinessAccount::class, 'tenant_id', 'tenant_id');
+    }
+
+    /**
      * Scope to get only active workspaces.
      *
      * @param  Builder<Workspace>  $query

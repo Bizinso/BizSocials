@@ -97,7 +97,7 @@ final class WhatsAppBusinessAccount extends Model
     /** @return HasMany<WhatsAppPhoneNumber> */
     public function phoneNumbers(): HasMany
     {
-        return $this->hasMany(WhatsAppPhoneNumber::class);
+        return $this->hasMany(WhatsAppPhoneNumber::class, 'whatsapp_business_account_id');
     }
 
     /** @return BelongsTo<User, WhatsAppBusinessAccount> */

@@ -81,7 +81,7 @@ final class MediaLibraryController extends Controller
     /**
      * Get a single media item.
      */
-    public function show(Request $request, Workspace $workspace, MediaLibraryItem $mediaLibraryItem): JsonResponse
+    public function show(Request $request, Workspace $workspace, MediaLibraryItem $media_library): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -90,7 +90,7 @@ final class MediaLibraryController extends Controller
             return $this->notFound('Workspace not found');
         }
 
-        if ($mediaLibraryItem->workspace_id !== $workspace->id) {
+        if ($media_library->workspace_id !== $workspace->id) {
             return $this->notFound('Media item not found');
         }
 
@@ -98,13 +98,13 @@ final class MediaLibraryController extends Controller
             return $this->forbidden('You do not have access to this workspace');
         }
 
-        return $this->success($mediaLibraryItem->load(['uploadedBy', 'folder']), 'Media item retrieved successfully');
+        return $this->success($media_library->load(['uploadedBy', 'folder']), 'Media item retrieved successfully');
     }
 
     /**
      * Update a media item.
      */
-    public function update(Request $request, Workspace $workspace, MediaLibraryItem $mediaLibraryItem): JsonResponse
+    public function update(Request $request, Workspace $workspace, MediaLibraryItem $media_library): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -113,7 +113,7 @@ final class MediaLibraryController extends Controller
             return $this->notFound('Workspace not found');
         }
 
-        if ($mediaLibraryItem->workspace_id !== $workspace->id) {
+        if ($media_library->workspace_id !== $workspace->id) {
             return $this->notFound('Media item not found');
         }
 
@@ -127,15 +127,15 @@ final class MediaLibraryController extends Controller
             'tags.*' => 'string|max:50',
         ]);
 
-        $mediaLibraryItem->update($validated);
+        $media_library->update($validated);
 
-        return $this->success($mediaLibraryItem, 'Media item updated successfully');
+        return $this->success($media_library, 'Media item updated successfully');
     }
 
     /**
      * Delete a media item.
      */
-    public function destroy(Request $request, Workspace $workspace, MediaLibraryItem $mediaLibraryItem): JsonResponse
+    public function destroy(Request $request, Workspace $workspace, MediaLibraryItem $media_library): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -144,7 +144,7 @@ final class MediaLibraryController extends Controller
             return $this->notFound('Workspace not found');
         }
 
-        if ($mediaLibraryItem->workspace_id !== $workspace->id) {
+        if ($media_library->workspace_id !== $workspace->id) {
             return $this->notFound('Media item not found');
         }
 
@@ -152,7 +152,7 @@ final class MediaLibraryController extends Controller
             return $this->forbidden('You do not have access to this workspace');
         }
 
-        $this->mediaLibraryService->delete($mediaLibraryItem);
+        $this->mediaLibraryService->delete($media_library);
 
         return $this->success(null, 'Media item deleted successfully');
     }
@@ -238,5 +238,26 @@ final class MediaLibraryController extends Controller
         );
 
         return $this->success(['moved_count' => $count], 'Items moved successfully');
+    }
+
+    /**
+     * Get usage statistics for the workspace.
+     */
+    public function usageStats(Request $request, Workspace $workspace): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($workspace->tenant_id !== $user->tenant_id) {
+            return $this->notFound('Workspace not found');
+        }
+
+        if (!$workspace->hasMember($user->id) && !$user->isAdmin()) {
+            return $this->forbidden('You do not have access to this workspace');
+        }
+
+        $stats = $this->mediaLibraryService->getUsageStats($workspace->id);
+
+        return $this->success($stats, 'Usage statistics retrieved successfully');
     }
 }

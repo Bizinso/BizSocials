@@ -70,4 +70,55 @@ final class WhatsAppTemplateController extends Controller
 
         return $this->success(WhatsAppTemplateData::fromModel($template->refresh()));
     }
+
+    /**
+     * Sync all templates from WhatsApp Business API for a workspace.
+     */
+    public function syncAll(Request $request, Workspace $workspace): JsonResponse
+    {
+        $wabaId = $request->input('waba_id');
+        
+        if (!$wabaId) {
+            return $this->error('WhatsApp Business Account ID is required', 422);
+        }
+
+        $waba = $workspace->whatsappBusinessAccounts()
+            ->where('id', $wabaId)
+            ->firstOrFail();
+
+        $stats = $this->templateService->syncTemplatesFromApi($waba);
+
+        return $this->success([
+            'message' => 'Templates synced successfully',
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Send a template message.
+     */
+    public function send(Request $request, Workspace $workspace, WhatsAppTemplate $template): JsonResponse
+    {
+        $validated = $request->validate([
+            'recipient_phone' => 'required|string',
+            'parameters' => 'array',
+        ]);
+
+        try {
+            $message = $this->templateService->sendTemplate(
+                $template,
+                $validated['recipient_phone'],
+                $validated['parameters'] ?? [],
+                $request->user()?->id
+            );
+
+            return $this->success([
+                'message' => 'Template message sent successfully',
+                'message_id' => $message->id,
+                'wamid' => $message->wamid,
+            ]);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
 }

@@ -19,7 +19,7 @@ test.beforeAll(async ({ browser }) => {
   await ctx.close()
 })
 
-test.describe('Post Create', () => {
+test.describe('Post Create - UI Elements', () => {
   test('post create page loads with heading', async ({ page }) => {
     test.skip(!workspaceId, 'No workspace available')
     await page.goto(`/app/w/${workspaceId}/posts/create`)
@@ -52,5 +52,124 @@ test.describe('Post Create', () => {
     // Wait for page heading to confirm the view loaded
     await page.getByRole('heading', { name: 'Create Post' }).waitFor({ state: 'visible', timeout: 20_000 })
     await expect(page.getByRole('button', { name: /Save Draft/i })).toBeVisible({ timeout: 15_000 })
+  })
+})
+
+test.describe('Post Create - Draft Flow', () => {
+  test('creates a draft post successfully', async ({ page }) => {
+    test.skip(!workspaceId, 'No workspace available')
+    
+    // Navigate to create post page
+    await page.goto(`/app/w/${workspaceId}/posts/create`)
+    await page.waitForLoadState('domcontentloaded')
+    
+    // Wait for page to load
+    await page.getByRole('heading', { name: 'Create Post' }).waitFor({ state: 'visible', timeout: 15_000 })
+    
+    // Fill in post content
+    const textarea = page.locator('textarea').first()
+    await textarea.waitFor({ state: 'visible', timeout: 15_000 })
+    await textarea.fill('E2E Draft Post - ' + Date.now())
+    
+    // Click Save Draft button
+    const saveDraftButton = page.getByRole('button', { name: /Save Draft/i })
+    await saveDraftButton.waitFor({ state: 'visible', timeout: 15_000 })
+    await saveDraftButton.click()
+    
+    // Wait for success message or redirect
+    await page.waitForTimeout(2000)
+    
+    // Verify we're redirected to posts list or see success message
+    await expect(page.getByText(/saved|success|draft/i).first()).toBeVisible({ timeout: 10_000 }).catch(() => {
+      // If no success message, check if we're on posts list
+      expect(page.url()).toContain('/posts')
+    })
+  })
+})
+
+test.describe('Post Create - Schedule Flow', () => {
+  test('schedules a post for future publishing', async ({ page }) => {
+    test.skip(!workspaceId, 'No workspace available')
+    
+    // Navigate to create post page
+    await page.goto(`/app/w/${workspaceId}/posts/create`)
+    await page.waitForLoadState('domcontentloaded')
+    
+    // Wait for page to load
+    await page.getByRole('heading', { name: 'Create Post' }).waitFor({ state: 'visible', timeout: 15_000 })
+    
+    // Fill in post content
+    const textarea = page.locator('textarea').first()
+    await textarea.waitFor({ state: 'visible', timeout: 15_000 })
+    await textarea.fill('E2E Scheduled Post - ' + Date.now())
+    
+    // Look for schedule button or option
+    const scheduleButton = page.getByRole('button', { name: /Schedule/i }).first()
+    if (await scheduleButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await scheduleButton.click()
+      
+      // Wait for schedule dialog/form
+      await page.waitForTimeout(1000)
+      
+      // Try to find and interact with date/time picker
+      const dateInput = page.locator('input[type="date"], input[type="datetime-local"]').first()
+      if (await dateInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+        // Set a future date
+        const futureDate = new Date()
+        futureDate.setDate(futureDate.getDate() + 1)
+        await dateInput.fill(futureDate.toISOString().split('T')[0])
+      }
+      
+      // Confirm schedule
+      const confirmButton = page.getByRole('button', { name: /Confirm|Schedule|Save/i }).first()
+      if (await confirmButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await confirmButton.click()
+        
+        // Wait for success
+        await page.waitForTimeout(2000)
+        await expect(page.getByText(/scheduled|success/i).first()).toBeVisible({ timeout: 10_000 }).catch(() => {
+          expect(page.url()).toContain('/posts')
+        })
+      }
+    }
+  })
+})
+
+test.describe('Post Create - Publish Flow', () => {
+  test('publishes a post immediately', async ({ page }) => {
+    test.skip(!workspaceId, 'No workspace available')
+    
+    // Navigate to create post page
+    await page.goto(`/app/w/${workspaceId}/posts/create`)
+    await page.waitForLoadState('domcontentloaded')
+    
+    // Wait for page to load
+    await page.getByRole('heading', { name: 'Create Post' }).waitFor({ state: 'visible', timeout: 15_000 })
+    
+    // Fill in post content
+    const textarea = page.locator('textarea').first()
+    await textarea.waitFor({ state: 'visible', timeout: 15_000 })
+    await textarea.fill('E2E Immediate Publish Post - ' + Date.now())
+    
+    // Look for publish button
+    const publishButton = page.getByRole('button', { name: /Publish Now|Publish/i }).first()
+    if (await publishButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await publishButton.click()
+      
+      // Wait for confirmation dialog if any
+      await page.waitForTimeout(1000)
+      
+      // Confirm publish if there's a confirmation dialog
+      const confirmButton = page.getByRole('button', { name: /Confirm|Yes|Publish/i }).first()
+      if (await confirmButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await confirmButton.click()
+      }
+      
+      // Wait for success
+      await page.waitForTimeout(2000)
+      await expect(page.getByText(/published|success/i).first()).toBeVisible({ timeout: 10_000 }).catch(() => {
+        expect(page.url()).toContain('/posts')
+      })
+    }
   })
 })

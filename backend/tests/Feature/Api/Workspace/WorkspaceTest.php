@@ -348,3 +348,159 @@ describe('PUT /api/v1/workspaces/{id}/settings', function () {
         expect($workspace->getSetting('timezone'))->toBe('America/New_York');
     });
 });
+
+describe('POST /api/v1/workspaces/{id}/switch', function () {
+    it('allows member to switch to workspace', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $workspace->addMember($this->member, WorkspaceRole::VIEWER);
+
+        Sanctum::actingAs($this->member);
+
+        $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/switch");
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $workspace->id)
+            ->assertJsonPath('message', 'Switched to workspace successfully');
+
+        // Verify session was set
+        expect(session('current_workspace_id'))->toBe($workspace->id);
+    });
+
+    it('denies switching to workspace from different tenant', function () {
+        $otherTenant = Tenant::factory()->create();
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $otherTenant->id,
+        ]);
+
+        Sanctum::actingAs($this->member);
+
+        $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/switch");
+
+        $response->assertUnprocessable();
+    });
+
+    it('denies switching to workspace where user is not a member', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+
+        Sanctum::actingAs($this->member);
+
+        $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/switch");
+
+        $response->assertUnprocessable();
+    });
+
+    it('denies switching to suspended workspace', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'status' => WorkspaceStatus::SUSPENDED,
+        ]);
+        $workspace->addMember($this->member, WorkspaceRole::VIEWER);
+
+        Sanctum::actingAs($this->member);
+
+        $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/switch");
+
+        $response->assertUnprocessable();
+    });
+});
+
+describe('GET /api/v1/workspaces/current', function () {
+    it('returns current workspace when set', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $workspace->addMember($this->member, WorkspaceRole::VIEWER);
+
+        Sanctum::actingAs($this->member);
+
+        // Set current workspace
+        session(['current_workspace_id' => $workspace->id]);
+
+        $response = $this->getJson('/api/v1/workspaces/current');
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $workspace->id);
+    });
+
+    it('returns null when no current workspace', function () {
+        Sanctum::actingAs($this->member);
+
+        $response = $this->getJson('/api/v1/workspaces/current');
+
+        $response->assertOk()
+            ->assertJsonPath('data', null)
+            ->assertJsonPath('message', 'No current workspace set');
+    });
+});
+
+describe('tenant isolation', function () {
+    it('only returns workspaces from user tenant', function () {
+        $otherTenant = Tenant::factory()->create();
+
+        Workspace::factory()->count(3)->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+        Workspace::factory()->count(2)->create([
+            'tenant_id' => $otherTenant->id,
+        ]);
+
+        Sanctum::actingAs($this->owner);
+
+        $response = $this->getJson('/api/v1/workspaces');
+
+        $response->assertOk()
+            ->assertJsonCount(3, 'data');
+
+        // Verify all returned workspaces belong to correct tenant
+        $workspaces = $response->json('data');
+        foreach ($workspaces as $workspace) {
+            expect($workspace['tenant_id'])->toBe($this->tenant->id);
+        }
+    });
+
+    it('prevents accessing workspace from different tenant', function () {
+        $otherTenant = Tenant::factory()->create();
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $otherTenant->id,
+        ]);
+
+        Sanctum::actingAs($this->owner);
+
+        $response = $this->getJson("/api/v1/workspaces/{$workspace->id}");
+
+        $response->assertNotFound();
+    });
+
+    it('prevents updating workspace from different tenant', function () {
+        $otherTenant = Tenant::factory()->create();
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $otherTenant->id,
+        ]);
+
+        Sanctum::actingAs($this->owner);
+
+        $response = $this->putJson("/api/v1/workspaces/{$workspace->id}", [
+            'name' => 'Should Fail',
+        ]);
+
+        // Returns 403 because authorization check happens before tenant check
+        $response->assertForbidden();
+    });
+
+    it('prevents deleting workspace from different tenant', function () {
+        $otherTenant = Tenant::factory()->create();
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $otherTenant->id,
+        ]);
+
+        Sanctum::actingAs($this->owner);
+
+        $response = $this->deleteJson("/api/v1/workspaces/{$workspace->id}");
+
+        $response->assertNotFound();
+    });
+});

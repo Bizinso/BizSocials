@@ -249,3 +249,177 @@ describe('restore', function () {
             ->toThrow(ValidationException::class);
     });
 });
+
+describe('switchWorkspace', function () {
+    it('switches to workspace for member', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'status' => WorkspaceStatus::ACTIVE,
+        ]);
+        $workspace->addMember($this->owner, WorkspaceRole::VIEWER);
+
+        $result = $this->service->switchWorkspace($this->owner, $workspace);
+
+        expect($result->id)->toBe($workspace->id);
+        expect(session('current_workspace_id'))->toBe($workspace->id);
+        expect(app('current_workspace')->id)->toBe($workspace->id);
+    });
+
+    it('throws exception for workspace from different tenant', function () {
+        $otherTenant = Tenant::factory()->create();
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $otherTenant->id,
+        ]);
+
+        expect(fn () => $this->service->switchWorkspace($this->owner, $workspace))
+            ->toThrow(ValidationException::class);
+    });
+
+    it('throws exception for non-member', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+
+        expect(fn () => $this->service->switchWorkspace($this->owner, $workspace))
+            ->toThrow(ValidationException::class);
+    });
+
+    it('throws exception for inaccessible workspace', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'status' => WorkspaceStatus::SUSPENDED,
+        ]);
+        $workspace->addMember($this->owner, WorkspaceRole::VIEWER);
+
+        expect(fn () => $this->service->switchWorkspace($this->owner, $workspace))
+            ->toThrow(ValidationException::class);
+    });
+});
+
+describe('getCurrentWorkspace', function () {
+    it('returns current workspace from session', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $workspace->addMember($this->owner, WorkspaceRole::VIEWER);
+
+        session(['current_workspace_id' => $workspace->id]);
+
+        $result = $this->service->getCurrentWorkspace($this->owner);
+
+        expect($result)->not->toBeNull();
+        expect($result->id)->toBe($workspace->id);
+    });
+
+    it('returns null when no workspace in session', function () {
+        $result = $this->service->getCurrentWorkspace($this->owner);
+
+        expect($result)->toBeNull();
+    });
+
+    it('clears invalid workspace from session', function () {
+        session(['current_workspace_id' => '00000000-0000-0000-0000-000000000000']);
+
+        $result = $this->service->getCurrentWorkspace($this->owner);
+
+        expect($result)->toBeNull();
+        expect(session('current_workspace_id'))->toBeNull();
+    });
+
+    it('clears workspace when user no longer has access', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $workspace->addMember($this->owner, WorkspaceRole::VIEWER);
+
+        session(['current_workspace_id' => $workspace->id]);
+
+        // Remove user from workspace
+        $workspace->removeMember($this->owner->id);
+
+        $result = $this->service->getCurrentWorkspace($this->owner);
+
+        expect($result)->toBeNull();
+        expect(session('current_workspace_id'))->toBeNull();
+    });
+
+    it('returns cached workspace from container', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+
+        app()->instance('current_workspace', $workspace);
+
+        $result = $this->service->getCurrentWorkspace($this->owner);
+
+        expect($result->id)->toBe($workspace->id);
+    });
+});
+
+describe('clearCurrentWorkspace', function () {
+    it('clears workspace from session and container', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+
+        session(['current_workspace_id' => $workspace->id]);
+        app()->instance('current_workspace', $workspace);
+
+        $this->service->clearCurrentWorkspace();
+
+        expect(session('current_workspace_id'))->toBeNull();
+        expect(app()->has('current_workspace'))->toBeFalse();
+    });
+});
+
+describe('tenant isolation', function () {
+    it('only lists workspaces for specific tenant', function () {
+        $otherTenant = Tenant::factory()->create();
+
+        Workspace::factory()->count(3)->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+        Workspace::factory()->count(2)->create([
+            'tenant_id' => $otherTenant->id,
+        ]);
+
+        $result = $this->service->listForTenant($this->tenant);
+
+        expect($result->total())->toBe(3);
+    });
+
+    it('prevents creating workspace for wrong tenant', function () {
+        $otherTenant = Tenant::factory()->create();
+        $data = new CreateWorkspaceData(name: 'Test Workspace');
+
+        $workspace = $this->service->create($this->tenant, $this->owner, $data);
+
+        expect($workspace->tenant_id)->toBe($this->tenant->id);
+        expect($workspace->tenant_id)->not->toBe($otherTenant->id);
+    });
+});
+
+describe('member management', function () {
+    it('adds creator as owner when creating workspace', function () {
+        $data = new CreateWorkspaceData(name: 'Test Workspace');
+
+        $workspace = $this->service->create($this->tenant, $this->owner, $data);
+
+        expect($workspace->hasMember($this->owner->id))->toBeTrue();
+        expect($workspace->getMemberRole($this->owner->id))->toBe(WorkspaceRole::OWNER);
+    });
+
+    it('tracks member count correctly', function () {
+        $workspace = Workspace::factory()->create([
+            'tenant_id' => $this->tenant->id,
+        ]);
+
+        $user1 = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $user2 = User::factory()->create(['tenant_id' => $this->tenant->id]);
+
+        $workspace->addMember($user1, WorkspaceRole::EDITOR);
+        $workspace->addMember($user2, WorkspaceRole::VIEWER);
+
+        expect($workspace->getMemberCount())->toBe(2);
+    });
+});

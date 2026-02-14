@@ -34,7 +34,10 @@ help:
 	@echo "  make migrate     - Run database migrations"
 	@echo "  make seed        - Seed the database"
 	@echo "  make fresh       - Fresh migrate with seeds"
-	@echo "  make test        - Run PHPUnit tests"
+	@echo "  make test        - Run all tests"
+	@echo "  make test-unit   - Run unit tests only"
+	@echo "  make test-feature - Run feature tests only"
+	@echo "  make test-properties - Run property tests only"
 	@echo "  make test-cov    - Run tests with coverage"
 	@echo "  make horizon     - Start Horizon manually"
 	@echo ""
@@ -122,6 +125,18 @@ test:
 	@echo "$(GREEN)Running tests...$(NC)"
 	docker compose exec app php artisan test
 
+test-unit:
+	@echo "$(GREEN)Running unit tests...$(NC)"
+	docker compose exec app php artisan test --testsuite=Unit
+
+test-feature:
+	@echo "$(GREEN)Running feature tests...$(NC)"
+	docker compose exec app php artisan test --testsuite=Feature
+
+test-properties:
+	@echo "$(GREEN)Running property tests...$(NC)"
+	docker compose exec app php artisan test --testsuite=Properties
+
 test-cov:
 	@echo "$(GREEN)Running tests with coverage...$(NC)"
 	docker compose exec app php artisan test --coverage
@@ -185,17 +200,17 @@ setup-env:
 		echo "$(YELLOW).env file already exists$(NC)"; \
 	fi
 
-setup: up
+setup: setup-env up
 	@echo "$(GREEN)Setting up BizSocials...$(NC)"
 	@echo ""
 	@echo "$(CYAN)Waiting for services to be healthy...$(NC)"
-	@sleep 15
+	@sleep 20
 	@echo ""
 	@echo "$(CYAN)Installing Composer dependencies...$(NC)"
-	docker compose exec -T app composer install
+	docker compose exec -T app composer install --no-interaction --prefer-dist --optimize-autoloader
 	@echo ""
 	@echo "$(CYAN)Generating application key...$(NC)"
-	docker compose exec -T app php artisan key:generate
+	docker compose exec -T app php artisan key:generate --force
 	@echo ""
 	@echo "$(CYAN)Running migrations...$(NC)"
 	docker compose exec -T app php artisan migrate --force
@@ -206,6 +221,10 @@ setup: up
 	@echo "$(CYAN)Creating storage link...$(NC)"
 	docker compose exec -T app php artisan storage:link
 	@echo ""
+	@echo "$(CYAN)Clearing caches...$(NC)"
+	docker compose exec -T app php artisan config:clear
+	docker compose exec -T app php artisan cache:clear
+	@echo ""
 	@echo "$(GREEN)======================================$(NC)"
 	@echo "$(GREEN)Setup complete!$(NC)"
 	@echo "$(GREEN)======================================$(NC)"
@@ -213,8 +232,13 @@ setup: up
 	@echo "$(CYAN)Available services:$(NC)"
 	@echo "  - API:         http://localhost:8080"
 	@echo "  - MailHog:     http://localhost:8025"
-	@echo "  - MinIO:       http://localhost:9001"
+	@echo "  - MinIO:       http://localhost:9001 (admin/minioadmin)"
 	@echo "  - Meilisearch: http://localhost:7700"
+	@echo ""
+	@echo "$(CYAN)Quick test commands:$(NC)"
+	@echo "  make test        - Run all tests"
+	@echo "  make test-unit   - Run unit tests only"
+	@echo "  make shell       - Enter container"
 	@echo ""
 
 # ===========================================

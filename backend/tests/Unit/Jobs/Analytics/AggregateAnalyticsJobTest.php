@@ -26,8 +26,7 @@ describe('AggregateAnalyticsJob', function (): void {
         it('is assigned to the analytics queue', function (): void {
             $job = new AggregateAnalyticsJob(
                 workspaceId: fake()->uuid(),
-                periodType: PeriodType::DAILY,
-                date: now()
+                date: now()->toDateString()
             );
 
             expect($job->queue)->toBe('analytics');
@@ -36,8 +35,7 @@ describe('AggregateAnalyticsJob', function (): void {
         it('is configured with correct number of tries', function (): void {
             $job = new AggregateAnalyticsJob(
                 workspaceId: fake()->uuid(),
-                periodType: PeriodType::DAILY,
-                date: now()
+                date: now()->toDateString()
             );
 
             expect($job->tries)->toBe(3);
@@ -46,30 +44,10 @@ describe('AggregateAnalyticsJob', function (): void {
         it('is configured with 5 minute timeout', function (): void {
             $job = new AggregateAnalyticsJob(
                 workspaceId: fake()->uuid(),
-                periodType: PeriodType::DAILY,
-                date: now()
+                date: now()->toDateString()
             );
 
             expect($job->timeout)->toBe(300);
-        });
-
-        it('has unique id based on workspace, period, and date', function (): void {
-            $workspaceId = fake()->uuid();
-            $date = now();
-
-            $job = new AggregateAnalyticsJob(
-                workspaceId: $workspaceId,
-                periodType: PeriodType::DAILY,
-                date: $date
-            );
-
-            $expectedId = sprintf(
-                'aggregate:%s:daily:%s',
-                $workspaceId,
-                $date->format('Y-m-d')
-            );
-
-            expect($job->uniqueId())->toBe($expectedId);
         });
     });
 
@@ -82,10 +60,9 @@ describe('AggregateAnalyticsJob', function (): void {
             // Act
             $job = new AggregateAnalyticsJob(
                 workspaceId: $workspace->id,
-                periodType: PeriodType::DAILY,
-                date: now()
+                date: now()->toDateString()
             );
-            $job->handle();
+            $job->handle(app(AnalyticsAggregationService::class));
 
             // Assert - should create workspace-level aggregate
             $aggregate = AnalyticsAggregate::query()

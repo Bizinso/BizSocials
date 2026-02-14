@@ -36,6 +36,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $duration Video duration in seconds
  * @property array|null $tags Tags array
  * @property array|null $metadata Additional metadata
+ * @property int $usage_count Number of times this media has been used
+ * @property \Carbon\Carbon|null $last_used_at Last time this media was used
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
@@ -85,6 +87,8 @@ final class MediaLibraryItem extends Model
         'duration',
         'tags',
         'metadata',
+        'usage_count',
+        'last_used_at',
     ];
 
     /**
@@ -99,8 +103,10 @@ final class MediaLibraryItem extends Model
             'width' => 'integer',
             'height' => 'integer',
             'duration' => 'integer',
+            'usage_count' => 'integer',
             'tags' => 'array',
             'metadata' => 'array',
+            'last_used_at' => 'datetime',
         ];
     }
 
@@ -203,5 +209,14 @@ final class MediaLibraryItem extends Model
     public function isDocument(): bool
     {
         return str_starts_with($this->mime_type, 'application/');
+    }
+
+    /**
+     * Increment usage count and update last used timestamp.
+     */
+    public function trackUsage(): void
+    {
+        $this->increment('usage_count');
+        $this->update(['last_used_at' => now()]);
     }
 }

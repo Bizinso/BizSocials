@@ -255,4 +255,47 @@ final class WorkspaceController extends Controller
             'Workspace restored successfully'
         );
     }
+
+    /**
+     * Switch to a workspace (set as current workspace context).
+     */
+    public function switch(Request $request, Workspace $workspace): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        try {
+            $switchedWorkspace = $this->workspaceService->switchWorkspace($user, $workspace);
+            $role = $switchedWorkspace->getMemberRole($user->id);
+
+            return $this->success(
+                WorkspaceData::fromModel($switchedWorkspace, $role?->value)->toArray(),
+                'Switched to workspace successfully'
+            );
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->validationError($e->errors(), $e->getMessage());
+        }
+    }
+
+    /**
+     * Get the current workspace context.
+     */
+    public function current(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $currentWorkspace = $this->workspaceService->getCurrentWorkspace($user);
+
+        if ($currentWorkspace === null) {
+            return $this->success(null, 'No current workspace set');
+        }
+
+        $role = $currentWorkspace->getMemberRole($user->id);
+
+        return $this->success(
+            WorkspaceData::fromModel($currentWorkspace, $role?->value)->toArray(),
+            'Current workspace retrieved successfully'
+        );
+    }
 }

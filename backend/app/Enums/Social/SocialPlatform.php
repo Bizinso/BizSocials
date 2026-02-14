@@ -13,6 +13,7 @@ namespace App\Enums\Social;
  * - FACEBOOK: General social networking
  * - INSTAGRAM: Photo and video sharing
  * - TWITTER: Microblogging platform
+ * - YOUTUBE: Video sharing platform
  * - WHATSAPP: Conversational messaging platform
  */
 enum SocialPlatform: string
@@ -21,6 +22,7 @@ enum SocialPlatform: string
     case FACEBOOK = 'facebook';
     case INSTAGRAM = 'instagram';
     case TWITTER = 'twitter';
+    case YOUTUBE = 'youtube';
     case WHATSAPP = 'whatsapp';
 
     /**
@@ -33,6 +35,7 @@ enum SocialPlatform: string
             self::FACEBOOK => 'Facebook',
             self::INSTAGRAM => 'Instagram',
             self::TWITTER => 'Twitter',
+            self::YOUTUBE => 'YouTube',
             self::WHATSAPP => 'WhatsApp',
         };
     }
@@ -47,6 +50,7 @@ enum SocialPlatform: string
             self::FACEBOOK => 'facebook',
             self::INSTAGRAM => 'instagram',
             self::TWITTER => 'twitter',
+            self::YOUTUBE => 'youtube',
             self::WHATSAPP => 'whatsapp',
         };
     }
@@ -61,6 +65,7 @@ enum SocialPlatform: string
             self::FACEBOOK => '#1877F2',
             self::INSTAGRAM => '#E4405F',
             self::TWITTER => '#1DA1F2',
+            self::YOUTUBE => '#FF0000',
             self::WHATSAPP => '#25D366',
         };
     }
@@ -71,7 +76,7 @@ enum SocialPlatform: string
     public function supportsScheduling(): bool
     {
         return match ($this) {
-            self::LINKEDIN, self::FACEBOOK, self::INSTAGRAM, self::TWITTER => true,
+            self::LINKEDIN, self::FACEBOOK, self::INSTAGRAM, self::TWITTER, self::YOUTUBE => true,
             self::WHATSAPP => false,
         };
     }
@@ -99,7 +104,7 @@ enum SocialPlatform: string
     {
         return match ($this) {
             self::LINKEDIN, self::INSTAGRAM => true,
-            self::FACEBOOK, self::TWITTER, self::WHATSAPP => false,
+            self::FACEBOOK, self::TWITTER, self::YOUTUBE, self::WHATSAPP => false,
         };
     }
 
@@ -113,6 +118,7 @@ enum SocialPlatform: string
             self::FACEBOOK => 63206,
             self::INSTAGRAM => 2200,
             self::TWITTER => 280,
+            self::YOUTUBE => 5000,
             self::WHATSAPP => 4096,
         };
     }
@@ -149,6 +155,12 @@ enum SocialPlatform: string
                 'users.read',
                 'offline.access',
             ],
+            self::YOUTUBE => [
+                'https://www.googleapis.com/auth/youtube.upload',
+                'https://www.googleapis.com/auth/youtube',
+                'https://www.googleapis.com/auth/youtube.readonly',
+                'https://www.googleapis.com/auth/youtubepartner',
+            ],
             self::WHATSAPP => [
                 'business_management',
                 'whatsapp_business_management',
@@ -164,7 +176,7 @@ enum SocialPlatform: string
     {
         return match ($this) {
             self::WHATSAPP => true,
-            self::LINKEDIN, self::FACEBOOK, self::INSTAGRAM, self::TWITTER => false,
+            self::LINKEDIN, self::FACEBOOK, self::INSTAGRAM, self::TWITTER, self::YOUTUBE => false,
         };
     }
 
