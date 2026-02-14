@@ -52,6 +52,66 @@ export class ApiHelper {
   async deletePost(workspaceId: string, postId: string) {
     return this.del(`/workspaces/${workspaceId}/posts/${postId}`)
   }
+
+  // Test data seeding methods (only available in non-production)
+  async createTestUser(data: {
+    email: string
+    password: string
+    name: string
+    tenant_id?: string
+    role?: 'owner' | 'admin' | 'member'
+    with_workspace?: boolean
+    workspace_name?: string
+  }) {
+    return this.post('/testing/users', data)
+  }
+
+  async createTestPosts(data: {
+    workspace_id: string
+    user_id: string
+    count?: number
+    status?: 'draft' | 'scheduled' | 'published' | 'failed'
+  }) {
+    return this.post('/testing/posts', data)
+  }
+
+  async createTestInboxItems(data: {
+    workspace_id: string
+    count?: number
+    status?: 'unread' | 'read' | 'resolved'
+    platform?: 'facebook' | 'instagram' | 'twitter' | 'linkedin'
+  }) {
+    return this.post('/testing/inbox-items', data)
+  }
+
+  async createTestTickets(data: {
+    tenant_id: string
+    user_id: string
+    count?: number
+    status?: 'open' | 'assigned' | 'resolved' | 'closed'
+  }) {
+    return this.post('/testing/tickets', data)
+  }
+
+  async createTestSocialAccount(data: {
+    workspace_id: string
+    platform: 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'tiktok' | 'youtube'
+    account_name: string
+  }) {
+    return this.post('/testing/social-accounts', data)
+  }
+
+  async cleanupTestData(data: {
+    email_pattern?: string
+    workspace_id?: string
+    user_id?: string
+  }) {
+    return this.post('/testing/cleanup', data)
+  }
+
+  async resetTestDatabase() {
+    return this.post('/testing/reset')
+  }
 }
 
 export async function getApiHelper(email: string, password: string, endpoint = '/auth/login'): Promise<ApiHelper> {

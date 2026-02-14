@@ -18,6 +18,11 @@ use Illuminate\Support\Facades\Route;
 // API Version 1
 Route::prefix('v1')->group(base_path('routes/api/v1.php'));
 
+// Testing routes (only available in non-production)
+if (!app()->environment('production')) {
+    require base_path('routes/api/testing.php');
+}
+
 // Root endpoint - API information
 Route::get('/', fn () => response()->json([
     'name' => 'BizSocials API',

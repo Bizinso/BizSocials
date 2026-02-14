@@ -16,11 +16,12 @@ use App\Enums\Social\SocialPlatform;
 test('has all expected cases', function (): void {
     $cases = SocialPlatform::cases();
 
-    expect($cases)->toHaveCount(5)
+    expect($cases)->toHaveCount(6)
         ->and(SocialPlatform::LINKEDIN->value)->toBe('linkedin')
         ->and(SocialPlatform::FACEBOOK->value)->toBe('facebook')
         ->and(SocialPlatform::INSTAGRAM->value)->toBe('instagram')
         ->and(SocialPlatform::TWITTER->value)->toBe('twitter')
+        ->and(SocialPlatform::YOUTUBE->value)->toBe('youtube')
         ->and(SocialPlatform::WHATSAPP->value)->toBe('whatsapp');
 });
 
@@ -29,6 +30,7 @@ test('label returns correct labels', function (): void {
         ->and(SocialPlatform::FACEBOOK->label())->toBe('Facebook')
         ->and(SocialPlatform::INSTAGRAM->label())->toBe('Instagram')
         ->and(SocialPlatform::TWITTER->label())->toBe('Twitter')
+        ->and(SocialPlatform::YOUTUBE->label())->toBe('YouTube')
         ->and(SocialPlatform::WHATSAPP->label())->toBe('WhatsApp');
 });
 
@@ -37,6 +39,7 @@ test('icon returns correct icons', function (): void {
         ->and(SocialPlatform::FACEBOOK->icon())->toBe('facebook')
         ->and(SocialPlatform::INSTAGRAM->icon())->toBe('instagram')
         ->and(SocialPlatform::TWITTER->icon())->toBe('twitter')
+        ->and(SocialPlatform::YOUTUBE->icon())->toBe('youtube')
         ->and(SocialPlatform::WHATSAPP->icon())->toBe('whatsapp');
 });
 
@@ -45,6 +48,7 @@ test('color returns correct brand colors', function (): void {
         ->and(SocialPlatform::FACEBOOK->color())->toBe('#1877F2')
         ->and(SocialPlatform::INSTAGRAM->color())->toBe('#E4405F')
         ->and(SocialPlatform::TWITTER->color())->toBe('#1DA1F2')
+        ->and(SocialPlatform::YOUTUBE->color())->toBe('#FF0000')
         ->and(SocialPlatform::WHATSAPP->color())->toBe('#25D366');
 });
 
@@ -53,6 +57,7 @@ test('supportsScheduling returns correct values', function (): void {
         ->and(SocialPlatform::FACEBOOK->supportsScheduling())->toBeTrue()
         ->and(SocialPlatform::INSTAGRAM->supportsScheduling())->toBeTrue()
         ->and(SocialPlatform::TWITTER->supportsScheduling())->toBeTrue()
+        ->and(SocialPlatform::YOUTUBE->supportsScheduling())->toBeTrue()
         ->and(SocialPlatform::WHATSAPP->supportsScheduling())->toBeFalse();
 });
 
@@ -76,6 +81,7 @@ test('supportsCarousel returns true for LinkedIn and Instagram', function (): vo
 test('supportsCarousel returns false for Facebook, Twitter and WhatsApp', function (): void {
     expect(SocialPlatform::FACEBOOK->supportsCarousel())->toBeFalse()
         ->and(SocialPlatform::TWITTER->supportsCarousel())->toBeFalse()
+        ->and(SocialPlatform::YOUTUBE->supportsCarousel())->toBeFalse()
         ->and(SocialPlatform::WHATSAPP->supportsCarousel())->toBeFalse();
 });
 
@@ -84,6 +90,7 @@ test('maxPostLength returns correct values for each platform', function (): void
         ->and(SocialPlatform::FACEBOOK->maxPostLength())->toBe(63206)
         ->and(SocialPlatform::INSTAGRAM->maxPostLength())->toBe(2200)
         ->and(SocialPlatform::TWITTER->maxPostLength())->toBe(280)
+        ->and(SocialPlatform::YOUTUBE->maxPostLength())->toBe(5000)
         ->and(SocialPlatform::WHATSAPP->maxPostLength())->toBe(4096);
 });
 
@@ -131,15 +138,25 @@ test('oauthScopes returns correct scopes for Twitter', function (): void {
         ->and($scopes)->toContain('offline.access');
 });
 
+test('oauthScopes returns correct scopes for YouTube', function (): void {
+    $scopes = SocialPlatform::YOUTUBE->oauthScopes();
+
+    expect($scopes)->toContain('https://www.googleapis.com/auth/youtube.upload')
+        ->and($scopes)->toContain('https://www.googleapis.com/auth/youtube')
+        ->and($scopes)->toContain('https://www.googleapis.com/auth/youtube.readonly')
+        ->and($scopes)->toContain('https://www.googleapis.com/auth/youtubepartner');
+});
+
 test('values returns all enum values', function (): void {
     $values = SocialPlatform::values();
 
     expect($values)->toBeArray()
-        ->and($values)->toHaveCount(5)
+        ->and($values)->toHaveCount(6)
         ->and($values)->toContain('linkedin')
         ->and($values)->toContain('facebook')
         ->and($values)->toContain('instagram')
         ->and($values)->toContain('twitter')
+        ->and($values)->toContain('youtube')
         ->and($values)->toContain('whatsapp');
 });
 
@@ -162,7 +179,8 @@ test('isConversational returns true only for WhatsApp', function (): void {
         ->and(SocialPlatform::LINKEDIN->isConversational())->toBeFalse()
         ->and(SocialPlatform::FACEBOOK->isConversational())->toBeFalse()
         ->and(SocialPlatform::INSTAGRAM->isConversational())->toBeFalse()
-        ->and(SocialPlatform::TWITTER->isConversational())->toBeFalse();
+        ->and(SocialPlatform::TWITTER->isConversational())->toBeFalse()
+        ->and(SocialPlatform::YOUTUBE->isConversational())->toBeFalse();
 });
 
 test('tryFrom returns null for invalid value', function (): void {

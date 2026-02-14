@@ -244,6 +244,11 @@ final class SocialAccountFactory extends Factory
                 'user_id' => (string) fake()->numberBetween(100000000, 999999999),
                 'verified' => fake()->boolean(10),
             ],
+            SocialPlatform::YOUTUBE => [
+                'channel_id' => 'UC' . fake()->regexify('[A-Za-z0-9_-]{22}'),
+                'channel_title' => fake()->company() . ' Channel',
+                'subscriber_count' => fake()->numberBetween(100, 100000),
+            ],
             SocialPlatform::WHATSAPP => [
                 'phone_number_id' => (string) fake()->numberBetween(100000000, 999999999),
                 'business_account_id' => (string) fake()->numberBetween(100000000, 999999999),
