@@ -702,30 +702,30 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Test conversation grouping
     - _Requirements: 12.1_
 
-  - [ ]* 27.3 Write property test for database persistence
+  - [x] 27.3 Write property test for database persistence
     - **Property 7: Database Persistence Verification**
     - **Validates: Requirements 4.3**
     - Test that conversations are stored in database
 
-- [ ] 28. Complete real-time notifications
-  - [ ] 28.1 Implement notification service with Laravel Reverb
+- [x] 28. Complete real-time notifications
+  - [x] 28.1 Implement notification service with Laravel Reverb
     - Set up Laravel Reverb for WebSocket connections
     - Create notification broadcasting events
     - Implement notification delivery
     - _Requirements: 4.4, 16.3_
 
-  - [ ] 28.2 Integrate notifications with inbox
+  - [x] 28.2 Integrate notifications with inbox
     - Trigger notifications on new messages
     - Trigger notifications on replies
     - Implement notification preferences
     - _Requirements: 4.4_
 
-  - [ ]* 28.3 Write unit tests for notification service
+  - [x] 28.3 Write unit tests for notification service
     - Test notification creation
     - Test notification broadcasting
     - _Requirements: 12.1_
 
-  - [ ]* 28.4 Write property test for notification delivery
+  - [x] 28.4 Write property test for notification delivery
     - **Property 14: Notification Delivery**
     - **Validates: Requirements 4.4**
     - Test that events trigger notifications

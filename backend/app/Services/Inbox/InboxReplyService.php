@@ -11,6 +11,7 @@ use App\Models\Inbox\InboxItem;
 use App\Models\Inbox\InboxReply;
 use App\Models\User;
 use App\Services\BaseService;
+use App\Services\Notification\NotificationBroadcastService;
 use App\Services\Social\FacebookClient;
 use App\Services\Social\InstagramClient;
 use App\Services\Social\TwitterClient;
@@ -24,6 +25,8 @@ final class InboxReplyService extends BaseService
         private readonly FacebookClient $facebookClient,
         private readonly InstagramClient $instagramClient,
         private readonly TwitterClient $twitterClient,
+        private readonly NotificationBroadcastService $broadcastService,
+        private readonly InboxNotificationService $inboxNotificationService,
     ) {
     }
     /**
@@ -67,6 +70,16 @@ final class InboxReplyService extends BaseService
             try {
                 $platformReplyId = $this->sendReplyToPlatform($item, $data->content_text);
                 $reply->markAsSent($platformReplyId);
+                
+                // Broadcast the reply event for real-time updates
+                $this->broadcastService->broadcastInboxMessageReplied(
+                    $item,
+                    $data->content_text,
+                    $user
+                );
+                
+                // Send notifications to relevant users
+                $this->inboxNotificationService->notifyMessageReplied($item, $user);
                 
                 $this->log('Reply sent successfully', [
                     'reply_id' => $reply->id,

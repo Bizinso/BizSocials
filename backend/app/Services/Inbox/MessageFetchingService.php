@@ -11,6 +11,7 @@ use App\Models\Inbox\InboxItem;
 use App\Models\Social\SocialAccount;
 use App\Models\Workspace\Workspace;
 use App\Services\BaseService;
+use App\Services\Notification\NotificationBroadcastService;
 use App\Services\Social\FacebookClient;
 use App\Services\Social\InstagramClient;
 use App\Services\Social\TwitterClient;
@@ -30,6 +31,8 @@ final class MessageFetchingService extends BaseService
         private readonly FacebookClient $facebookClient,
         private readonly InstagramClient $instagramClient,
         private readonly TwitterClient $twitterClient,
+        private readonly NotificationBroadcastService $broadcastService,
+        private readonly InboxNotificationService $inboxNotificationService,
     ) {}
 
     /**
@@ -301,7 +304,7 @@ final class MessageFetchingService extends BaseService
         $createdAt = $this->extractCreatedTime($comment, $platform);
 
         // Create inbox item
-        InboxItem::create([
+        $inboxItem = InboxItem::create([
             'workspace_id' => $account->workspace_id,
             'social_account_id' => $account->id,
             'post_target_id' => null, // Could be linked to PostTarget if we track it
@@ -320,6 +323,12 @@ final class MessageFetchingService extends BaseService
                 'platform' => $platform->value,
             ],
         ]);
+
+        // Broadcast the new inbox item for real-time updates
+        $this->broadcastService->broadcastInboxItemReceived($inboxItem);
+
+        // Send notifications to relevant users
+        $this->inboxNotificationService->notifyNewMessage($inboxItem);
 
         return true;
     }

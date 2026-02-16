@@ -12,12 +12,19 @@ use App\Models\Inbox\InboxItem;
 use App\Models\User;
 use App\Models\Workspace\Workspace;
 use App\Services\BaseService;
+use App\Services\Notification\NotificationBroadcastService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 
 final class InboxService extends BaseService
 {
+    public function __construct(
+        private readonly NotificationBroadcastService $broadcastService,
+        private readonly InboxNotificationService $inboxNotificationService,
+    ) {
+    }
+
     /**
      * List inbox items for a workspace with optional filters.
      *
@@ -265,13 +272,24 @@ final class InboxService extends BaseService
     /**
      * Assign an inbox item to a user.
      */
-    public function assign(InboxItem $item, User $user): InboxItem
+    public function assign(InboxItem $item, User $user, User $assignedBy): InboxItem
     {
         $item->assignTo($user);
+
+        // Broadcast the assignment event for real-time updates
+        $this->broadcastService->broadcastInboxMessageAssigned(
+            $item,
+            $user,
+            $assignedBy
+        );
+
+        // Send notification to the assigned user
+        $this->inboxNotificationService->notifyMessageAssigned($item, $user, $assignedBy);
 
         $this->log('Inbox item assigned', [
             'item_id' => $item->id,
             'assigned_to' => $user->id,
+            'assigned_by' => $assignedBy->id,
         ]);
 
         return $item->fresh(['socialAccount', 'assignedTo', 'resolvedBy']) ?? $item;

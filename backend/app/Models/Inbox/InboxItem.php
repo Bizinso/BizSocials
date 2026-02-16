@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $workspace_id Workspace UUID
  * @property string $social_account_id Social account UUID
  * @property string|null $post_target_id Post target UUID (if comment on our post)
+ * @property string|null $conversation_id Conversation UUID
  * @property InboxItemType $item_type Type of inbox item
  * @property InboxItemStatus $status Item status
  * @property string $platform_item_id Platform's comment/mention ID
@@ -50,6 +51,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Workspace $workspace
  * @property-read SocialAccount $socialAccount
  * @property-read PostTarget|null $postTarget
+ * @property-read InboxConversation|null $conversation
  * @property-read User|null $assignedTo
  * @property-read User|null $resolvedBy
  * @property-read Collection<InboxReply> $replies
@@ -85,6 +87,7 @@ final class InboxItem extends Model
         'workspace_id',
         'social_account_id',
         'post_target_id',
+        'conversation_id',
         'item_type',
         'status',
         'platform_item_id',
@@ -147,6 +150,16 @@ final class InboxItem extends Model
     public function postTarget(): BelongsTo
     {
         return $this->belongsTo(PostTarget::class);
+    }
+
+    /**
+     * Get the conversation this item belongs to.
+     *
+     * @return BelongsTo<InboxConversation, InboxItem>
+     */
+    public function conversation(): BelongsTo
+    {
+        return $this->belongsTo(InboxConversation::class);
     }
 
     /**
