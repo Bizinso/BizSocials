@@ -676,7 +676,7 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Track reply status
     - _Requirements: 4.2, 16.3, 16.4_
 
-  - [x]* 26.2 Write unit tests for reply service
+  - [x] 26.2 Write unit tests for reply service
     - Test reply sending
     - Test error handling
     - _Requirements: 12.1_
