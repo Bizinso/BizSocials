@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\Route;
 
 // API Version 1
 Route::prefix('v1')->group(base_path('routes/api/v1.php'));
+
+// Broadcasting authentication routes
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 // Testing routes (only available in non-production)
 if (!app()->environment('production')) {
