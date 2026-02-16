@@ -36,7 +36,7 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Use PHP token parsing to analyze code structure
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [x] 1.3 Write unit tests for CodeAnalyzer
+  - [ ]* 1.3 Write unit tests for CodeAnalyzer
     - Test file discovery across directory structures
     - Test handling of parse errors and missing files
     - _Requirements: 1.1, 1.2, 1.3_
@@ -47,7 +47,7 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Add detection for TODO/STUB/MOCK comments
     - _Requirements: 1.4, 1.5, 2.9_
 
-  - [x] 1.5 Write property test for PatternDetector
+  - [ ]* 1.5 Write property test for PatternDetector
     - **Property 2: Hardcoded Data Detection**
     - **Validates: Requirements 1.4, 2.9**
     - Test that any method returning hardcoded arrays/objects is detected
@@ -64,7 +64,7 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Generate JSON and HTML report formats
     - _Requirements: 1.6, 1.7, 21.1, 21.2_
 
-  - [x] 1.8 Write property test for report structure
+  - [ ]* 1.8 Write property test for report structure
     - **Property 4: Report Structure Completeness**
     - **Validates: Requirements 1.6, 21.1**
     - Test that all reports contain required fields and valid structure
@@ -199,7 +199,7 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Create factory states for common scenarios
     - _Requirements: 11.8_
 
-  - [x] 5.4 Write example unit test
+  - [ ]* 5.4 Write example unit test
     - Create sample test to verify Pest configuration
     - Test a simple service method
     - Verify test database and factories work
@@ -332,7 +332,7 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Test workspace switching
     - _Requirements: 13.1_
 
-  - [x] 11.4 Write property test for tenant isolation
+  - [ ]* 11.4 Write property test for tenant isolation
     - **Property 7: Database Persistence Verification**
     - **Validates: Requirements 16.3**
     - Test that queries are properly scoped to tenant
@@ -416,30 +416,30 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Test account connection and disconnection
     - _Requirements: 14.2_
 
-- [x] 15. Complete Twitter/X integration
-  - [x] 15.1 Implement Twitter OAuth 2.0 flow
+- [ ] 15. Complete Twitter/X integration
+  - [ ] 15.1 Implement Twitter OAuth 2.0 flow
     - Create OAuth controller for Twitter
     - Implement PKCE flow for OAuth 2.0
     - Add token storage and refresh
     - _Requirements: 2.3, 17.1, 17.2_
 
-  - [x] 15.2 Implement Twitter API v2 client
+  - [ ] 15.2 Implement Twitter API v2 client
     - Create `app/Services/Social/TwitterClient.php`
     - Implement tweet posting, media upload
     - Implement timeline fetching and metrics
     - _Requirements: 17.3, 17.4_
 
-  - [x] 15.3 Write unit tests for Twitter client
+  - [ ]* 15.3 Write unit tests for Twitter client
     - Test tweet posting with/without media
     - Test error handling
     - _Requirements: 12.1_
 
-  - [x] 15.4 Write integration tests for Twitter API
+  - [ ]* 15.4 Write integration tests for Twitter API
     - Test POST /api/social/twitter/connect endpoint
     - Test POST /api/social/twitter/post endpoint
     - _Requirements: 13.1_
 
-  - [x] 15.5 Write E2E test for Twitter connection
+  - [ ]* 15.5 Write E2E test for Twitter connection
     - Test OAuth flow
     - Test posting a tweet
     - _Requirements: 14.2_
@@ -542,13 +542,13 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Test status transitions
     - _Requirements: 12.1_
 
-  - [x] 20.5 Write property test for queue job creation
+  - [ ]* 20.5 Write property test for queue job creation
     - **Property 8: Queue Job Creation**
     - **Validates: Requirements 3.2**
     - Test that scheduled posts create queue jobs
 
-  - [x] 20.6 Write property test for database persistence
-    - **Property 7: Database Persistencan you help me tce Verification**
+  - [ ]* 20.6 Write property test for database persistence
+    - **Property 7: Database Persistence Verification**
     - **Validates: Requirements 3.1**
     - Test that post operations persist to database
 
@@ -601,7 +601,7 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Test image optimization
     - _Requirements: 12.1_
 
-  - [x] 22.4 Write property test for storage verification
+  - [ ]* 22.4 Write property test for storage verification
     - **Property 10: Storage Verification**
     - **Validates: Requirements 3.5**
     - Test that uploaded files exist in storage
@@ -611,81 +611,81 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Test GET /api/media endpoint
     - _Requirements: 13.1_
 
-- [x] 23. Complete bulk operations
-  - [x] 23.1 Implement bulk post operations
+- [ ] 23. Complete bulk operations
+  - [ ] 23.1 Implement bulk post operations
     - Implement bulk delete
     - Implement bulk status change
     - Implement bulk scheduling
     - Process actual database records
     - _Requirements: 3.7, 16.3_
 
-  - [x] 23.2 Write unit tests for bulk operations
+  - [ ]* 23.2 Write unit tests for bulk operations
     - Test bulk delete
     - Test bulk status updates
     - _Requirements: 12.1_
 
-  - [x] 23.3 Write property test for bulk operation authenticity
+  - [ ]* 23.3 Write property test for bulk operation authenticity
     - **Property 12: Bulk Operation Authenticity**
     - **Validates: Requirements 3.7**
     - Test that affected count matches actual changes
 
-  - [x] 23.4 Write integration tests for bulk API
+  - [ ]* 23.4 Write integration tests for bulk API
     - Test POST /api/posts/bulk-delete endpoint
     - Test POST /api/posts/bulk-update endpoint
     - _Requirements: 13.1_
 
-- [x] 24. Checkpoint - Content management complete
+- [ ] 24. Checkpoint - Content management complete
   - Test post creation, scheduling, and publishing
   - Verify media uploads work correctly
   - Ensure all tests pass, ask the user if questions arise
 
 ## PHASE 6: UNIFIED INBOX (Week 12-14)
 
-- [x] 25. Complete message retrieval from platforms
-  - [x] 25.1 Implement message fetching services
+- [ ] 25. Complete message retrieval from platforms
+  - [ ] 25.1 Implement message fetching services
     - Create services to fetch messages from Facebook, Instagram, Twitter
     - Implement pagination and incremental sync
     - Store messages in database
     - _Requirements: 4.1, 16.3, 16.4_
 
-  - [x] 25.2 Implement webhook handlers for real-time messages
+  - [ ] 25.2 Implement webhook handlers for real-time messages
     - Create webhook endpoints for each platform
     - Verify webhook signatures
     - Process incoming messages
     - _Requirements: 16.4, 17.6_
 
-  - [x] 25.3 Write unit tests for message fetching
+  - [ ]* 25.3 Write unit tests for message fetching
     - Test message parsing and storage
     - Test incremental sync logic
     - _Requirements: 12.1_
 
-  - [x] 25.4 Write property test for API calls
+  - [ ]* 25.4 Write property test for API calls
     - **Property 9: Real API Call Verification**
     - **Validates: Requirements 4.1**
     - Test that real API requests are made
 
-  - [x] 25.5 Write integration tests for message API
+  - [ ]* 25.5 Write integration tests for message API
     - Test GET /api/inbox/messages endpoint
     - Test webhook endpoints
     - _Requirements: 13.1_
 
-- [x] 26. Complete reply functionality
-  - [x] 26.1 Implement message reply service
+- [ ] 26. Complete reply functionality
+  - [ ] 26.1 Implement message reply service
     - Create service to send replies via platform APIs
     - Handle platform-specific reply formats
     - Track reply status
     - _Requirements: 4.2, 16.3, 16.4_
 
-  - [x]* 26.2 Write unit tests for reply service
+  - [ ]* 26.2 Write unit tests for reply service
     - Test reply sending
     - Test error handling
     - _Requirements: 12.1_
 
-  - [x]* 26.3 Write integration tests for reply API
+  - [ ]* 26.3 Write integration tests for reply API
     - Test POST /api/inbox/messages/{id}/reply endpoint
     - _Requirements: 13.1_
 
-  - [x]* 26.4 Write E2E test for inbox reply flow
+  - [ ]* 26.4 Write E2E test for inbox reply flow
     - Test viewing messages
     - Test sending a reply
     - _Requirements: 14.4_

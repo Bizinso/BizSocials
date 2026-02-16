@@ -118,6 +118,8 @@ Route::post('/webhooks/razorpay', [\App\Http\Controllers\Api\V1\Billing\WebhookC
 Route::prefix('webhooks')->group(function () {
     Route::get('/facebook', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'facebookVerify']);
     Route::post('/facebook', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'facebookHandle']);
+    Route::get('/instagram', [\App\Http\Controllers\Api\Webhooks\SocialWebhookController::class, 'verifyInstagram']);
+    Route::post('/instagram', [\App\Http\Controllers\Api\Webhooks\SocialWebhookController::class, 'handleInstagram']);
     Route::get('/twitter', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'twitterCrc']);
     Route::post('/twitter', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'twitterHandle']);
     Route::post('/linkedin', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'linkedinHandle']);

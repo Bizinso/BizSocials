@@ -88,8 +88,8 @@ class TestDataController extends Controller
         for ($i = 0; $i < $count; $i++) {
             $posts[] = Post::create([
                 'workspace_id' => $validated['workspace_id'],
-                'user_id' => $validated['user_id'],
-                'content' => "Test post content #{$i}",
+                'created_by_user_id' => $validated['user_id'],
+                'content_text' => "Test post content #{$i}",
                 'status' => $validated['status'] ?? 'draft',
                 'scheduled_at' => ($validated['status'] ?? 'draft') === 'scheduled' 
                     ? now()->addHours($i + 1) 
@@ -219,7 +219,7 @@ class TestDataController extends Controller
                 
                 foreach ($users as $user) {
                     // Delete related data
-                    Post::where('user_id', $user->id)->delete();
+                    Post::where('created_by_user_id', $user->id)->delete();
                     SupportTicket::where('user_id', $user->id)->delete();
                     
                     // Delete workspaces created by this user
@@ -247,7 +247,7 @@ class TestDataController extends Controller
 
             // Cleanup specific user
             if (isset($validated['user_id'])) {
-                $deleted['posts'] += Post::where('user_id', $validated['user_id'])->delete();
+                $deleted['posts'] += Post::where('created_by_user_id', $validated['user_id'])->delete();
                 $deleted['tickets'] += SupportTicket::where('user_id', $validated['user_id'])->delete();
             }
         });

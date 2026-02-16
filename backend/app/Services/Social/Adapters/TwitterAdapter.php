@@ -26,6 +26,13 @@ final class TwitterAdapter implements SocialPlatformAdapter
 
     public function exchangeCode(string $code, string $redirectUri): OAuthTokenData
     {
+        // Retrieve code verifier from request (set by OAuthService during callback handling)
+        $codeVerifier = request()->input('twitter_code_verifier');
+        
+        if (!$codeVerifier) {
+            throw new \Exception('Twitter code verifier not found. Please restart the OAuth flow.');
+        }
+
         $response = $this->client->post(self::TOKEN_URL, [
             'auth' => [
                 config('services.twitter.client_id'),
@@ -35,7 +42,7 @@ final class TwitterAdapter implements SocialPlatformAdapter
                 'grant_type' => 'authorization_code',
                 'code' => $code,
                 'redirect_uri' => $redirectUri,
-                'code_verifier' => session('twitter_code_verifier', 'challenge'),
+                'code_verifier' => $codeVerifier,
             ],
         ]);
 

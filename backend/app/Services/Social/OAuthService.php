@@ -85,6 +85,14 @@ final class OAuthService extends BaseService
         // Clear the used state
         Cache::forget($cacheKey);
 
+        // For Twitter, retrieve and store code verifier in request context
+        if ($platform === SocialPlatform::TWITTER) {
+            $codeVerifier = Cache::pull('twitter_code_verifier:' . $state);
+            if ($codeVerifier) {
+                request()->merge(['twitter_code_verifier' => $codeVerifier]);
+            }
+        }
+
         // Exchange code for tokens via platform adapter
         $adapter = $this->adapterFactory->create($platform);
         $credentials = $this->credentialResolver->resolve($platform);

@@ -22,7 +22,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - createCampaign(), createABTest(), scheduleCampaign(), sendCampaign() methods
     - _Requirements: 1.2, 1.9, 1.14_
   
-  - [ ] 1.4 Write property test for campaign data completeness
+  - [ ]* 1.4 Write property test for campaign data completeness
     - **Property 1: Campaign data completeness**
     - **Validates: Requirements 1.2**
 
@@ -38,11 +38,11 @@ This implementation plan breaks down the development of 11 feature phases into d
     - calculateSpamScore() method
     - _Requirements: 1.5, 1.21, 1.22_
   
-  - [ ] 2.3 Write property test for merge tag replacement
+  - [ ]* 2.3 Write property test for merge tag replacement
     - **Property 2: Merge tag replacement**
     - **Validates: Requirements 1.5**
   
-  - [ ] 2.4 Write property test for spam score range
+  - [ ]* 2.4 Write property test for spam score range
     - **Property 10: Spam score range**
     - **Validates: Requirements 1.21**
 
@@ -63,7 +63,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - API key configuration, send implementation
     - _Requirements: 1.7_
   
-  - [ ] 3.5 Write unit tests for ESP adapters
+  - [ ]* 3.5 Write unit tests for ESP adapters
     - Test send success, failure, webhook parsing
     - Mock HTTP responses
     - _Requirements: 1.7_
@@ -85,19 +85,19 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Record timestamps and update EmailSend records
     - _Requirements: 1.11, 1.12_
   
-  - [ ] 4.4 Write property test for email validation filtering
+  - [ ]* 4.4 Write property test for email validation filtering
     - **Property 3: Email validation filtering**
     - **Validates: Requirements 1.6**
   
-  - [ ] 4.5 Write property test for unsubscribe enforcement
+  - [ ]* 4.5 Write property test for unsubscribe enforcement
     - **Property 8: Unsubscribe enforcement**
     - **Validates: Requirements 1.18**
   
-  - [ ] 4.6 Write property test for hard bounce handling
+  - [ ]* 4.6 Write property test for hard bounce handling
     - **Property 9: Hard bounce handling**
     - **Validates: Requirements 1.19**
   
-  - [ ] 4.7 Write property test for email send retry limit
+  - [ ]* 4.7 Write property test for email send retry limit
     - **Property 11: Email send retry limit**
     - **Validates: Requirements 1.25**
 
@@ -112,7 +112,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Send winning variant to remaining recipients
     - _Requirements: 1.9_
   
-  - [ ] 5.3 Write property test for A/B test winner selection
+  - [ ]* 5.3 Write property test for A/B test winner selection
     - **Property 4: A/B test winner selection**
     - **Validates: Requirements 1.9**
 
@@ -122,7 +122,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Aggregate metrics by campaign, date range
     - _Requirements: 1.13_
   
-  - [ ] 6.2 Write property test for deliverability rate calculation
+  - [ ]* 6.2 Write property test for deliverability rate calculation
     - **Property 7: Deliverability rate calculation**
     - **Validates: Requirements 1.13**
 
@@ -139,7 +139,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - show() for campaign analytics, overview() for aggregate stats
     - _Requirements: 1.13_
   
-  - [ ] 7.4 Write integration tests for email API endpoints
+  - [ ]* 7.4 Write integration tests for email API endpoints
     - Test full campaign creation, sending, tracking flow
     - _Requirements: 1.2, 1.11, 1.12_
 
@@ -177,7 +177,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - createPage(), publishPage(), trackVisit(), trackConversion() methods
     - _Requirements: 2.1, 2.3, 2.13_
   
-  - [ ] 10.4 Write property test for unique URL generation
+  - [ ]* 10.4 Write property test for unique URL generation
     - **Property 12: Unique URL generation**
     - **Validates: Requirements 2.3**
 
@@ -210,15 +210,15 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Track previous submissions, hide already-collected fields
     - _Requirements: 2.21, 2.22_
   
-  - [ ] 12.4 Write property test for form validation enforcement
+  - [ ]* 12.4 Write property test for form validation enforcement
     - **Property 13: Form validation enforcement**
     - **Validates: Requirements 2.7**
   
-  - [ ] 12.5 Write property test for contact creation from form
+  - [ ]* 12.5 Write property test for contact creation from form
     - **Property 14: Contact creation from form**
     - **Validates: Requirements 2.9**
   
-  - [ ] 12.6 Write property test for duplicate contact prevention
+  - [ ]* 12.6 Write property test for duplicate contact prevention
     - **Property 16: Duplicate contact prevention**
     - **Validates: Requirements 2.22**
 
@@ -242,7 +242,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Calculate conversion rate
     - _Requirements: 2.13, 2.14_
   
-  - [ ] 14.3 Write property test for conversion rate calculation
+  - [ ]* 14.3 Write property test for conversion rate calculation
     - **Property 15: Conversion rate calculation**
     - **Validates: Requirements 2.14**
 
@@ -278,7 +278,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - CRUD operations, submit(), embedCode(), submissions()
     - _Requirements: 2.5, 2.9, 2.17_
   
-  - [ ] 17.3 Write integration tests for landing page and form APIs
+  - [ ]* 17.3 Write integration tests for landing page and form APIs
     - Test page creation, publishing, form submission flow
     - _Requirements: 2.1, 2.9_
 
@@ -331,11 +331,11 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Handle delays between steps
     - _Requirements: 3.6, 3.7_
   
-  - [ ] 21.4 Write property test for workflow enrollment on trigger
+  - [ ]* 21.4 Write property test for workflow enrollment on trigger
     - **Property 17: Workflow enrollment on trigger**
     - **Validates: Requirements 3.4**
   
-  - [ ] 21.5 Write property test for duplicate enrollment prevention
+  - [ ]* 21.5 Write property test for duplicate enrollment prevention
     - **Property 19: Duplicate enrollment prevention**
     - **Validates: Requirements 3.10**
 
@@ -344,7 +344,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - checkGoalAchievement(), exitWorkflowOnGoal() methods
     - _Requirements: 3.8, 3.9_
   
-  - [ ] 22.2 Write property test for goal-based unenrollment
+  - [ ]* 22.2 Write property test for goal-based unenrollment
     - **Property 18: Goal-based unenrollment**
     - **Validates: Requirements 3.9**
 
@@ -359,7 +359,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Support demographic and engagement scoring
     - _Requirements: 3.14, 3.15_
   
-  - [ ] 24.2 Write property test for lead score accumulation
+  - [ ]* 24.2 Write property test for lead score accumulation
     - **Property 20: Lead score accumulation**
     - **Validates: Requirements 3.14**
 
@@ -369,7 +369,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Retry logic (max 3 retries, exponential backoff)
     - _Requirements: 3.21, 3.22_
   
-  - [ ] 25.2 Write property test for webhook retry limit
+  - [ ]* 25.2 Write property test for webhook retry limit
     - **Property 21: Webhook retry limit**
     - **Validates: Requirements 3.22**
 
@@ -386,7 +386,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - rules(), calculate() methods
     - _Requirements: 3.14_
   
-  - [ ] 26.4 Write integration tests for workflow APIs
+  - [ ]* 26.4 Write integration tests for workflow APIs
     - Test workflow creation, enrollment, execution
     - _Requirements: 3.1, 3.4_
 
@@ -439,11 +439,11 @@ This implementation plan breaks down the development of 11 feature phases into d
     - getTimeline() method to aggregate all contact interactions
     - _Requirements: 4.4, 4.5_
   
-  - [ ] 30.3 Write property test for duplicate detection by email
+  - [ ]* 30.3 Write property test for duplicate detection by email
     - **Property 25: Duplicate detection by email**
     - **Validates: Requirements 4.22**
   
-  - [ ] 30.4 Write property test for contact merge data preservation
+  - [ ]* 30.4 Write property test for contact merge data preservation
     - **Property 26: Contact merge data preservation**
     - **Validates: Requirements 4.24**
 
@@ -457,7 +457,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Generate CSV with selected fields
     - _Requirements: 4.21_
   
-  - [ ] 31.3 Write property test for contact import validation
+  - [ ]* 31.3 Write property test for contact import validation
     - **Property 24: Contact import validation**
     - **Validates: Requirements 4.20**
 
@@ -470,11 +470,11 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Total value, weighted value, win rate, average deal size
     - _Requirements: 4.9, 4.10, 4.11_
   
-  - [ ] 32.3 Write property test for weighted deal value calculation
+  - [ ]* 32.3 Write property test for weighted deal value calculation
     - **Property 22: Weighted deal value calculation**
     - **Validates: Requirements 4.10**
   
-  - [ ] 32.4 Write property test for win rate calculation
+  - [ ]* 32.4 Write property test for win rate calculation
     - **Property 23: Win rate calculation**
     - **Validates: Requirements 4.11**
 
@@ -516,7 +516,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - CRUD operations for custom property definitions
     - _Requirements: 4.2_
   
-  - [ ] 36.4 Write integration tests for CRM APIs
+  - [ ]* 36.4 Write integration tests for CRM APIs
     - Test contact creation, deal pipeline, import/export
     - _Requirements: 4.1, 4.6, 4.19_
 
@@ -575,7 +575,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - OAuth flow, campaign creation, metrics retrieval
     - _Requirements: 5.3, 5.4, 5.5, 5.9_
   
-  - [ ] 40.5 Write unit tests for ad platform adapters
+  - [ ]* 40.5 Write unit tests for ad platform adapters
     - Mock API responses, test authentication, campaign creation
     - _Requirements: 5.1, 5.2, 5.3_
 
@@ -606,15 +606,15 @@ This implementation plan breaks down the development of 11 feature phases into d
     - CTR, ROAS, ROI calculations
     - _Requirements: 5.10, 5.11, 5.17_
   
-  - [ ] 42.3 Write property test for CTR calculation
+  - [ ]* 42.3 Write property test for CTR calculation
     - **Property 27: CTR calculation**
     - **Validates: Requirements 5.10**
   
-  - [ ] 42.4 Write property test for ROAS calculation
+  - [ ]* 42.4 Write property test for ROAS calculation
     - **Property 28: ROAS calculation**
     - **Validates: Requirements 5.11**
   
-  - [ ] 42.5 Write property test for ROI calculation
+  - [ ]* 42.5 Write property test for ROI calculation
     - **Property 29: ROI calculation**
     - **Validates: Requirements 5.17**
 
@@ -651,7 +651,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Cross-platform reporting
     - _Requirements: 5.18_
   
-  - [ ] 46.4 Write integration tests for advertising APIs
+  - [ ]* 46.4 Write integration tests for advertising APIs
     - Test account connection, campaign creation, metrics sync
     - _Requirements: 5.4, 5.6_
 
@@ -714,7 +714,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Calculate score (0-100) based on on-page factors
     - _Requirements: 6.7_
   
-  - [ ] 51.3 Write property test for SEO score range
+  - [ ]* 51.3 Write property test for SEO score range
     - **Property 30: SEO score range**
     - **Validates: Requirements 6.7**
 
@@ -742,7 +742,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Calculate score based on SEO best practices
     - _Requirements: 6.13_
   
-  - [ ] 54.3 Write property test for content score range
+  - [ ]* 54.3 Write property test for content score range
     - **Property 31: Content score range**
     - **Validates: Requirements 6.13**
 
@@ -797,7 +797,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - optimize(), calculateScore()
     - _Requirements: 6.11, 6.13_
   
-  - [ ] 61.4 Write integration tests for SEO APIs
+  - [ ]* 61.4 Write integration tests for SEO APIs
     - Test keyword tracking, on-page analysis, site audit
     - _Requirements: 6.3, 6.5, 6.9_
 
@@ -855,7 +855,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - API configuration, send implementation
     - _Requirements: 7.1_
   
-  - [ ] 65.5 Write unit tests for SMS provider adapters
+  - [ ]* 65.5 Write unit tests for SMS provider adapters
     - Mock API responses, test send success/failure
     - _Requirements: 7.1_
 
@@ -876,11 +876,11 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Batch processing for SMS sending
     - _Requirements: 7.1_
   
-  - [ ] 66.5 Write property test for SMS merge tag replacement
+  - [ ]* 66.5 Write property test for SMS merge tag replacement
     - **Property 32: SMS merge tag replacement**
     - **Validates: Requirements 7.3**
   
-  - [ ] 66.6 Write property test for SMS character limit validation
+  - [ ]* 66.6 Write property test for SMS character limit validation
     - **Property 33: SMS character limit validation**
     - **Validates: Requirements 7.4**
 
@@ -894,7 +894,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Update contact opt-out status
     - _Requirements: 7.11, 7.12_
   
-  - [ ] 67.3 Write property test for SMS opt-out enforcement
+  - [ ]* 67.3 Write property test for SMS opt-out enforcement
     - **Property 34: SMS opt-out enforcement**
     - **Validates: Requirements 7.11**
 
@@ -910,7 +910,7 @@ This implementation plan breaks down the development of 11 feature phases into d
   - [ ] 69.2 Calculate SMS delivery rate
     - _Requirements: 7.17_
   
-  - [ ] 69.3 Write property test for SMS delivery rate calculation
+  - [ ]* 69.3 Write property test for SMS delivery rate calculation
     - **Property 35: SMS delivery rate calculation**
     - **Validates: Requirements 7.17**
 
@@ -935,7 +935,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Display campaign metrics
     - _Requirements: 7.16, 7.17_
   
-  - [ ] 72.3 Write integration tests for SMS APIs
+  - [ ]* 72.3 Write integration tests for SMS APIs
     - Test campaign creation, sending, opt-out handling
     - _Requirements: 7.2, 7.11_
 
@@ -981,7 +981,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - firstTouchAttribution(), lastTouchAttribution(), linearAttribution(), timeDecayAttribution(), positionBasedAttribution() methods
     - _Requirements: 8.1, 8.2_
   
-  - [ ] 76.3 Write property test for attribution credit totals
+  - [ ]* 76.3 Write property test for attribution credit totals
     - **Property 36: Attribution credit totals**
     - **Validates: Requirements 8.2**
 
@@ -995,11 +995,11 @@ This implementation plan breaks down the development of 11 feature phases into d
     - calculateCAC(), calculateCLV(), calculateChannelROI() methods
     - _Requirements: 8.4, 8.5, 8.7_
   
-  - [ ] 78.2 Write property test for CAC calculation
+  - [ ]* 78.2 Write property test for CAC calculation
     - **Property 37: CAC calculation**
     - **Validates: Requirements 8.4**
   
-  - [ ] 78.3 Write property test for channel ROI calculation
+  - [ ]* 78.3 Write property test for channel ROI calculation
     - **Property 38: Channel ROI calculation**
     - **Validates: Requirements 8.7**
 
@@ -1044,7 +1044,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - createFunnel(), calculateDropOffRates() methods
     - _Requirements: 8.23, 8.24, 8.25_
   
-  - [ ] 84.2 Write property test for funnel drop-off calculation
+  - [ ]* 84.2 Write property test for funnel drop-off calculation
     - **Property 39: Funnel drop-off calculation**
     - **Validates: Requirements 8.25**
 
@@ -1065,7 +1065,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - generateReport(), exportReport() methods
     - _Requirements: 8.17, 8.20_
   
-  - [ ] 85.5 Write integration tests for analytics APIs
+  - [ ]* 85.5 Write integration tests for analytics APIs
     - Test attribution calculation, metrics, reporting
     - _Requirements: 8.1, 8.4, 8.17_
 
@@ -1121,7 +1121,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Return HTTP 429 with Retry-After header when exceeded
     - _Requirements: 9.4_
   
-  - [ ] 89.3 Write property test for rate limit enforcement
+  - [ ]* 89.3 Write property test for rate limit enforcement
     - **Property 40: Rate limit enforcement**
     - **Validates: Requirements 9.4**
 
@@ -1138,15 +1138,15 @@ This implementation plan breaks down the development of 11 feature phases into d
     - HMAC-SHA256 signature generation and verification
     - _Requirements: 9.9_
   
-  - [ ] 90.4 Write property test for webhook delivery attempt
+  - [ ]* 90.4 Write property test for webhook delivery attempt
     - **Property 41: Webhook delivery attempt**
     - **Validates: Requirements 9.7**
   
-  - [ ] 90.5 Write property test for webhook retry limit
+  - [ ]* 90.5 Write property test for webhook retry limit
     - **Property 42: Webhook retry limit**
     - **Validates: Requirements 9.8**
   
-  - [ ] 90.6 Write property test for webhook signature verification
+  - [ ]* 90.6 Write property test for webhook signature verification
     - **Property 43: Webhook signature verification**
     - **Validates: Requirements 9.9**
 
@@ -1243,7 +1243,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - OAuth connection flow for third-party integrations
     - _Requirements: 9.18_
   
-  - [ ] 98.4 Write integration tests for API and webhook systems
+  - [ ]* 98.4 Write integration tests for API and webhook systems
     - Test API key authentication, rate limiting, webhook delivery
     - _Requirements: 9.2, 9.4, 9.7_
 
@@ -1294,7 +1294,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Support CIDR notation
     - _Requirements: 10.3, 10.4_
   
-  - [ ] 103.2 Write property test for IP whitelist enforcement
+  - [ ]* 103.2 Write property test for IP whitelist enforcement
     - **Property 44: IP whitelist enforcement**
     - **Validates: Requirements 10.4**
 
@@ -1326,7 +1326,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Anonymize personal data (not hard delete)
     - _Requirements: 10.10_
   
-  - [ ] 106.3 Write property test for GDPR data deletion
+  - [ ]* 106.3 Write property test for GDPR data deletion
     - **Property 45: GDPR data deletion**
     - **Validates: Requirements 10.10**
 
@@ -1395,7 +1395,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - createBackup(), restoreBackup(), listBackups()
     - _Requirements: 10.18, 10.20_
   
-  - [ ] 114.4 Write integration tests for enterprise features
+  - [ ]* 114.4 Write integration tests for enterprise features
     - Test IP whitelisting, GDPR export/deletion, backups
     - _Requirements: 10.4, 10.9, 10.10_
 
@@ -1464,7 +1464,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Verify DKIM and SPF records
     - _Requirements: 11.6_
   
-  - [ ] 120.3 Write property test for email domain DNS validation
+  - [ ]* 120.3 Write property test for email domain DNS validation
     - **Property 46: Email domain DNS validation**
     - **Validates: Requirements 11.6**
 
@@ -1556,7 +1556,7 @@ This implementation plan breaks down the development of 11 feature phases into d
     - Configure pricing, view client workspaces
     - _Requirements: 11.16, 11.18_
   
-  - [ ] 134.4 Write integration tests for white-label features
+  - [ ]* 134.4 Write integration tests for white-label features
     - Test custom domain mapping, email domain validation, branding
     - _Requirements: 11.3, 11.6, 11.1_
 
@@ -1614,19 +1614,19 @@ This implementation plan breaks down the development of 11 feature phases into d
     - _Requirements: 5.19, 8.2_
 
 - [ ] 138. End-to-end testing
-  - [ ] 138.1 Write end-to-end test for email campaign flow
+  - [ ]* 138.1 Write end-to-end test for email campaign flow
     - Create campaign → send → track opens/clicks → attribute conversion
     - _Requirements: 1.2, 1.11, 1.12, 8.2_
   
-  - [ ] 138.2 Write end-to-end test for landing page conversion flow
+  - [ ]* 138.2 Write end-to-end test for landing page conversion flow
     - Create page → publish → submit form → create contact → trigger workflow
     - _Requirements: 2.1, 2.9, 3.4_
   
-  - [ ] 138.3 Write end-to-end test for CRM pipeline flow
+  - [ ]* 138.3 Write end-to-end test for CRM pipeline flow
     - Create contact → create deal → move through stages → calculate metrics
     - _Requirements: 4.1, 4.6, 4.8, 4.9_
   
-  - [ ] 138.4 Write end-to-end test for automation workflow
+  - [ ]* 138.4 Write end-to-end test for automation workflow
     - Trigger workflow → execute actions → track completion
     - _Requirements: 3.4, 3.5, 3.13_
 
