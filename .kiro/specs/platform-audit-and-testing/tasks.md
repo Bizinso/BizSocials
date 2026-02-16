@@ -681,23 +681,23 @@ The plan is organized into 12 phases, each building on the previous phase. Each 
     - Test error handling
     - _Requirements: 12.1_
 
-  - [x]* 26.3 Write integration tests for reply API
+  - [x] 26.3 Write integration tests for reply API
     - Test POST /api/inbox/messages/{id}/reply endpoint
     - _Requirements: 13.1_
 
-  - [x]* 26.4 Write E2E test for inbox reply flow
+  - [x] 26.4 Write E2E test for inbox reply flow
     - Test viewing messages
     - Test sending a reply
     - _Requirements: 14.4_
 
 - [ ] 27. Fix conversation threading
-  - [ ] 27.1 Implement conversation grouping logic
+  - [x] 27.1 Implement conversation grouping logic
     - Group messages by conversation thread
     - Implement thread detection algorithms
     - Store conversation metadata
     - _Requirements: 4.3, 16.3_
 
-  - [ ]* 27.2 Write unit tests for conversation threading
+  - [x] 27.2 Write unit tests for conversation threading
     - Test thread detection
     - Test conversation grouping
     - _Requirements: 12.1_
