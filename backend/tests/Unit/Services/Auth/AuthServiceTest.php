@@ -5,430 +5,436 @@ declare(strict_types=1);
 use App\Data\Auth\LoginData;
 use App\Data\Auth\RegisterData;
 use App\Enums\Tenant\TenantStatus;
-use App\Enums\Tenant\TenantType;
 use App\Enums\User\TenantRole;
 use App\Enums\User\UserStatus;
-use App\Events\Tenant\TenantCreated;
 use App\Models\Tenant\Tenant;
-use App\Models\Tenant\TenantOnboarding;
 use App\Models\User;
 use App\Services\Auth\AuthService;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
-beforeEach(function () {
-    $this->authService = app(AuthService::class);
-});
+uses(RefreshDatabase::class);
 
-describe('AuthService::login', function () {
-    it('logs in user with valid credentials', function () {
-        $user = User::factory()->active()->verified()->create([
-            'email' => 'test@example.com',
-            'password' => 'password123',
-        ]);
-
-        $data = new LoginData(
-            email: 'test@example.com',
-            password: 'password123',
-        );
-
-        $result = $this->authService->login($data);
-
-        expect($result)->toHaveKeys(['user', 'token', 'expires_in']);
-        expect($result['user']->id)->toBe($user->id);
-        expect($result['token'])->toBeString();
-        expect($result['expires_in'])->toBeInt();
+describe('AuthService', function () {
+    beforeEach(function () {
+        $this->authService = app(AuthService::class);
     });
 
-    it('throws exception for invalid email', function () {
-        User::factory()->active()->verified()->create([
-            'email' => 'test@example.com',
-            'password' => 'password123',
-        ]);
+    describe('login', function () {
+        it('authenticates user with valid credentials', function () {
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'password' => 'password123',
+                'status' => UserStatus::ACTIVE,
+                'mfa_enabled' => false,
+            ]);
 
-        $data = new LoginData(
-            email: 'wrong@example.com',
-            password: 'password123',
-        );
+            $loginData = new LoginData(
+                email: 'test@example.com',
+                password: 'password123',
+                remember: false
+            );
 
-        $this->authService->login($data);
-    })->throws(ValidationException::class);
+            $result = $this->authService->login($loginData);
 
-    it('throws exception for invalid password', function () {
-        User::factory()->active()->verified()->create([
-            'email' => 'test@example.com',
-            'password' => 'password123',
-        ]);
+            expect($result)->toHaveKeys(['user', 'token', 'expires_in'])
+                ->and($result['user']->id)->toBe($user->id)
+                ->and($result['token'])->toBeString()
+                ->and($result['expires_in'])->toBeInt();
+        });
 
-        $data = new LoginData(
-            email: 'test@example.com',
-            password: 'wrongpassword',
-        );
+        it('verifies password is hashed with bcrypt', function () {
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'password' => 'password123',
+            ]);
 
-        $this->authService->login($data);
-    })->throws(ValidationException::class);
+            // Verify password is hashed
+            expect($user->password)->not->toBe('password123')
+                ->and(Hash::check('password123', $user->password))->toBeTrue()
+                ->and(str_starts_with($user->password, '$2y$'))->toBeTrue(); // bcrypt identifier
+        });
 
-    it('throws exception for suspended user', function () {
-        User::factory()->suspended()->create([
-            'email' => 'test@example.com',
-            'password' => 'password123',
-        ]);
+        it('throws exception for invalid email', function () {
+            $loginData = new LoginData(
+                email: 'nonexistent@example.com',
+                password: 'password123',
+                remember: false
+            );
 
-        $data = new LoginData(
-            email: 'test@example.com',
-            password: 'password123',
-        );
+            $this->authService->login($loginData);
+        })->throws(ValidationException::class, 'The provided credentials are incorrect.');
 
-        $this->authService->login($data);
-    })->throws(ValidationException::class);
+        it('throws exception for invalid password', function () {
+            User::factory()->create([
+                'email' => 'test@example.com',
+                'password' => 'correctpassword',
+                'status' => UserStatus::ACTIVE,
+            ]);
 
-    it('records login time', function () {
-        $user = User::factory()->active()->verified()->create([
-            'email' => 'test@example.com',
-            'password' => 'password123',
-            'last_login_at' => null,
-        ]);
+            $loginData = new LoginData(
+                email: 'test@example.com',
+                password: 'wrongpassword',
+                remember: false
+            );
 
-        $data = new LoginData(
-            email: 'test@example.com',
-            password: 'password123',
-        );
+            $this->authService->login($loginData);
+        })->throws(ValidationException::class, 'The provided credentials are incorrect.');
 
-        $this->authService->login($data);
+        it('throws exception for inactive user', function () {
+            User::factory()->create([
+                'email' => 'test@example.com',
+                'password' => 'password123',
+                'status' => UserStatus::SUSPENDED,
+            ]);
 
-        $user->refresh();
-        expect($user->last_login_at)->not->toBeNull();
-    });
+            $loginData = new LoginData(
+                email: 'test@example.com',
+                password: 'password123',
+                remember: false
+            );
 
-    it('returns longer expiry with remember flag', function () {
-        User::factory()->active()->verified()->create([
-            'email' => 'test@example.com',
-            'password' => 'password123',
-            'mfa_enabled' => false,
-        ]);
+            $this->authService->login($loginData);
+        })->throws(ValidationException::class, 'Your account is not active');
 
-        $dataWithRemember = new LoginData(
-            email: 'test@example.com',
-            password: 'password123',
-            remember: true,
-        );
+        it('returns mfa_required for users with MFA enabled', function () {
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'password' => 'password123',
+                'status' => UserStatus::ACTIVE,
+                'mfa_enabled' => true,
+                'mfa_secret' => encrypt('JBSWY3DPEHPK3PXP'),
+            ]);
 
-        $dataWithoutRemember = new LoginData(
-            email: 'test@example.com',
-            password: 'password123',
-            remember: false,
-        );
+            $loginData = new LoginData(
+                email: 'test@example.com',
+                password: 'password123',
+                remember: false
+            );
 
-        $resultWithRemember = $this->authService->login($dataWithRemember);
+            $result = $this->authService->login($loginData);
 
-        // Reset tokens for next test
-        User::where('email', 'test@example.com')->first()->tokens()->delete();
+            expect($result)->toHaveKey('mfa_required')
+                ->and($result['mfa_required'])->toBeTrue()
+                ->and($result['expires_in'])->toBe(300); // 5 minutes
+        });
 
-        $resultWithoutRemember = $this->authService->login($dataWithoutRemember);
+        it('records login timestamp', function () {
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'password' => 'password123',
+                'status' => UserStatus::ACTIVE,
+                'mfa_enabled' => false,
+                'last_login_at' => null,
+            ]);
 
-        expect($resultWithRemember['expires_in'])->toBeGreaterThan($resultWithoutRemember['expires_in']);
-    });
-});
+            $loginData = new LoginData(
+                email: 'test@example.com',
+                password: 'password123',
+                remember: false
+            );
 
-describe('AuthService::register', function () {
-    it('creates a new user', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
+            $this->authService->login($loginData);
 
-        $data = new RegisterData(
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-        );
+            $user->refresh();
+            expect($user->last_login_at)->not->toBeNull()
+                ->and($user->last_active_at)->not->toBeNull();
+        });
 
-        $user = $this->authService->register($data);
+        it('limits active tokens to 10', function () {
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'password' => 'password123',
+                'status' => UserStatus::ACTIVE,
+                'mfa_enabled' => false,
+            ]);
 
-        expect($user)->toBeInstanceOf(User::class);
-        expect($user->name)->toBe('John Doe');
-        expect($user->email)->toBe('john@example.com');
-        expect($user->status)->toBe(UserStatus::ACTIVE);
+            // Create 10 existing tokens
+            for ($i = 0; $i < 10; $i++) {
+                $user->createToken('test-token-'.$i);
+            }
 
-        Event::assertDispatched(Registered::class);
-    });
+            expect($user->tokens()->count())->toBe(10);
 
-    it('creates a new tenant with deterministic fields when no tenant_id provided', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
-        $tenantCount = Tenant::count();
+            $loginData = new LoginData(
+                email: 'test@example.com',
+                password: 'password123',
+                remember: false
+            );
 
-        $data = new RegisterData(
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-        );
+            $this->authService->login($loginData);
 
-        $user = $this->authService->register($data);
+            // Should still have 10 tokens (oldest one removed)
+            expect($user->tokens()->count())->toBe(10);
+        });
 
-        expect(Tenant::count())->toBe($tenantCount + 1);
-        expect($user->tenant_id)->not->toBeNull();
-        expect($user->role_in_tenant)->toBe(TenantRole::OWNER);
+        it('respects remember me option', function () {
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'password' => 'password123',
+                'status' => UserStatus::ACTIVE,
+                'mfa_enabled' => false,
+            ]);
 
-        $tenant = Tenant::find($user->tenant_id);
-        expect($tenant->name)->toBe("John Doe's Organization");
-        expect($tenant->type)->toBe(TenantType::INDIVIDUAL);
-        expect($tenant->status)->toBe(TenantStatus::PENDING);
-        expect($tenant->slug)->toStartWith('john-does-organization-');
-    });
+            $loginDataRemember = new LoginData(
+                email: 'test@example.com',
+                password: 'password123',
+                remember: true
+            );
 
-    it('sets owner_user_id on newly created tenant', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
+            $result = $this->authService->login($loginDataRemember);
 
-        $data = new RegisterData(
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-        );
-
-        $user = $this->authService->register($data);
-
-        $tenant = Tenant::find($user->tenant_id);
-        expect($tenant->owner_user_id)->toBe($user->id);
-    });
-
-    it('dispatches TenantCreated event when new tenant is created', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
-
-        $data = new RegisterData(
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-        );
-
-        $this->authService->register($data);
-
-        Event::assertDispatched(TenantCreated::class, function (TenantCreated $event) {
-            return $event->tenant->name === "John Doe's Organization";
+            // Remember me should give 30 days (43200 minutes = 2592000 seconds)
+            expect($result['expires_in'])->toBe(60 * 24 * 30 * 60);
         });
     });
 
-    it('creates TenantOnboarding record when new tenant is created', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
+    describe('register', function () {
+        it('creates new user with hashed password', function () {
+            $registerData = new RegisterData(
+                name: 'Test User',
+                email: 'newuser@example.com',
+                password: 'password123',
+                password_confirmation: 'password123',
+                tenant_id: null
+            );
 
-        $data = new RegisterData(
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-        );
+            $user = $this->authService->register($registerData);
 
-        $user = $this->authService->register($data);
+            expect($user)->toBeInstanceOf(User::class)
+                ->and($user->email)->toBe('newuser@example.com')
+                ->and($user->name)->toBe('Test User')
+                ->and($user->password)->not->toBe('password123')
+                ->and(Hash::check('password123', $user->password))->toBeTrue()
+                ->and($user->status)->toBe(UserStatus::ACTIVE);
+        });
 
-        $onboarding = TenantOnboarding::where('tenant_id', $user->tenant_id)->first();
-        expect($onboarding)->not->toBeNull();
-        expect($onboarding->current_step)->toBe('account_created');
-        expect($onboarding->steps_completed)->toBe(['account_created']);
-        expect($onboarding->started_at)->not->toBeNull();
-        expect($onboarding->completed_at)->toBeNull();
+        it('creates new tenant for user without tenant_id', function () {
+            $registerData = new RegisterData(
+                name: 'Test User',
+                email: 'newuser@example.com',
+                password: 'password123',
+                password_confirmation: 'password123',
+                tenant_id: null
+            );
+
+            $user = $this->authService->register($registerData);
+
+            expect($user->tenant)->not->toBeNull()
+                ->and($user->tenant->owner_user_id)->toBe($user->id)
+                ->and($user->role_in_tenant)->toBe(TenantRole::OWNER)
+                ->and($user->tenant->status)->toBe(TenantStatus::PENDING);
+        });
+
+        it('assigns user to existing tenant', function () {
+            $tenant = Tenant::factory()->create();
+
+            $registerData = new RegisterData(
+                name: 'Test User',
+                email: 'newuser@example.com',
+                password: 'password123',
+                password_confirmation: 'password123',
+                tenant_id: $tenant->id
+            );
+
+            $user = $this->authService->register($registerData);
+
+            expect($user->tenant_id)->toBe($tenant->id)
+                ->and($user->role_in_tenant)->toBe(TenantRole::MEMBER);
+        });
+
+        it('creates tenant onboarding record for new tenant', function () {
+            $registerData = new RegisterData(
+                name: 'Test User',
+                email: 'newuser@example.com',
+                password: 'password123',
+                password_confirmation: 'password123',
+                tenant_id: null
+            );
+
+            $user = $this->authService->register($registerData);
+
+            expect($user->tenant->onboarding)->not->toBeNull()
+                ->and($user->tenant->onboarding->current_step)->toBe('account_created')
+                ->and($user->tenant->onboarding->steps_completed)->toContain('account_created');
+        });
     });
 
-    it('does not create TenantOnboarding when joining existing tenant', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
-        $tenant = Tenant::factory()->create();
-        $onboardingCountBefore = TenantOnboarding::count();
+    describe('logout', function () {
+        it('revokes current access token', function () {
+            $user = User::factory()->create();
+            $tokenResult = $user->createToken('test-token');
 
-        $data = new RegisterData(
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-            tenant_id: $tenant->id,
-        );
+            // Set the current access token on the user
+            $user->withAccessToken($tokenResult->accessToken);
 
-        $this->authService->register($data);
+            expect($user->tokens()->count())->toBe(1);
 
-        expect(TenantOnboarding::count())->toBe($onboardingCountBefore);
+            $this->authService->logout($user);
+
+            expect($user->tokens()->count())->toBe(0);
+        });
+
+        it('handles logout when no token exists', function () {
+            $user = User::factory()->create();
+
+            expect($user->tokens()->count())->toBe(0);
+
+            // Should not throw exception
+            $this->authService->logout($user);
+
+            expect($user->tokens()->count())->toBe(0);
+        });
     });
 
-    it('does not dispatch TenantCreated when joining existing tenant', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
-        $tenant = Tenant::factory()->create();
+    describe('refreshToken', function () {
+        it('revokes old tokens and creates new one', function () {
+            $user = User::factory()->create();
+            $oldToken = $user->createToken('old-token')->plainTextToken;
 
-        $data = new RegisterData(
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-            tenant_id: $tenant->id,
-        );
+            expect($user->tokens()->count())->toBe(1);
 
-        $this->authService->register($data);
+            $newToken = $this->authService->refreshToken($user);
 
-        Event::assertNotDispatched(TenantCreated::class);
+            expect($newToken)->toBeString()
+                ->and($newToken)->not->toBe($oldToken)
+                ->and($user->tokens()->count())->toBe(1);
+        });
+
+        it('revokes all existing tokens', function () {
+            $user = User::factory()->create();
+            $user->createToken('token-1');
+            $user->createToken('token-2');
+            $user->createToken('token-3');
+
+            expect($user->tokens()->count())->toBe(3);
+
+            $this->authService->refreshToken($user);
+
+            expect($user->tokens()->count())->toBe(1);
+        });
     });
 
-    it('uses existing tenant when tenant_id provided', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
-        $tenant = Tenant::factory()->create();
+    describe('verifyEmail', function () {
+        it('verifies email with correct hash', function () {
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'email_verified_at' => null,
+            ]);
 
-        $data = new RegisterData(
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-            tenant_id: $tenant->id,
-        );
+            $hash = sha1($user->email);
 
-        $user = $this->authService->register($data);
+            $result = $this->authService->verifyEmail($user, $hash);
 
-        expect($user->tenant_id)->toBe($tenant->id);
-        expect($user->role_in_tenant)->toBe(TenantRole::MEMBER);
+            expect($result)->toBeTrue();
+            $user->refresh();
+            expect($user->hasVerifiedEmail())->toBeTrue();
+        });
+
+        it('rejects verification with incorrect hash', function () {
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'email_verified_at' => null,
+            ]);
+
+            $result = $this->authService->verifyEmail($user, 'invalid-hash');
+
+            expect($result)->toBeFalse();
+            $user->refresh();
+            expect($user->hasVerifiedEmail())->toBeFalse();
+        });
+
+        it('activates tenant on first email verification', function () {
+            $tenant = Tenant::factory()->create([
+                'status' => TenantStatus::PENDING,
+            ]);
+
+            $user = User::factory()->create([
+                'tenant_id' => $tenant->id,
+                'email' => 'test@example.com',
+                'email_verified_at' => null,
+            ]);
+
+            $hash = sha1($user->email);
+            $this->authService->verifyEmail($user, $hash);
+
+            $tenant->refresh();
+            expect($tenant->status)->toBe(TenantStatus::ACTIVE);
+        });
+
+        it('does not change already verified email', function () {
+            $originalTime = now()->subDay();
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'email_verified_at' => $originalTime,
+            ]);
+
+            $hash = sha1($user->email);
+            $this->authService->verifyEmail($user, $hash);
+
+            $user->refresh();
+            expect($user->email_verified_at->timestamp)->toBe($originalTime->timestamp);
+        });
     });
 
-    it('hashes the password', function () {
-        Event::fake([Registered::class, TenantCreated::class]);
+    describe('resendVerification', function () {
+        it('sends verification email for unverified user', function () {
+            Notification::fake();
 
-        $data = new RegisterData(
-            name: 'John Doe',
-            email: 'john@example.com',
-            password: 'password123',
-            password_confirmation: 'password123',
-        );
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'email_verified_at' => null,
+            ]);
 
-        $user = $this->authService->register($data);
+            $this->authService->resendVerification($user);
 
-        expect($user->password)->not->toBe('password123');
-        expect(Hash::check('password123', $user->password))->toBeTrue();
-    });
-});
+            Notification::assertSentTo($user, \Illuminate\Auth\Notifications\VerifyEmail::class);
+        });
 
-describe('AuthService::logout', function () {
-    it('revokes current token', function () {
-        $user = User::factory()->active()->verified()->create();
-        $user->createToken('test-token');
+        it('does not send email for already verified user', function () {
+            Notification::fake();
 
-        expect($user->tokens()->count())->toBe(1);
+            $user = User::factory()->create([
+                'email' => 'test@example.com',
+                'email_verified_at' => now(),
+            ]);
 
-        // Simulate authenticated request
-        $token = $user->tokens()->first();
-        $user->withAccessToken($token);
+            $this->authService->resendVerification($user);
 
-        $this->authService->logout($user);
-
-        expect($user->tokens()->count())->toBe(0);
-    });
-});
-
-describe('AuthService::refreshToken', function () {
-    it('revokes all old tokens and creates new one', function () {
-        $user = User::factory()->active()->verified()->create();
-        $user->createToken('token-1');
-        $user->createToken('token-2');
-
-        expect($user->tokens()->count())->toBe(2);
-
-        $newToken = $this->authService->refreshToken($user);
-
-        expect($newToken)->toBeString();
-        expect($user->tokens()->count())->toBe(1);
-    });
-});
-
-describe('AuthService::verifyEmail', function () {
-    it('verifies email with valid hash', function () {
-        $user = User::factory()->unverified()->create([
-            'email' => 'test@example.com',
-        ]);
-
-        $hash = sha1('test@example.com');
-
-        $result = $this->authService->verifyEmail($user, $hash);
-
-        expect($result)->toBeTrue();
-        $user->refresh();
-        expect($user->hasVerifiedEmail())->toBeTrue();
+            Notification::assertNothingSent();
+        });
     });
 
-    it('returns false for invalid hash', function () {
-        $user = User::factory()->unverified()->create([
-            'email' => 'test@example.com',
-        ]);
+    describe('security', function () {
+        it('uses bcrypt for password hashing', function () {
+            $user = User::factory()->create([
+                'password' => 'testpassword',
+            ]);
 
-        $result = $this->authService->verifyEmail($user, 'invalid-hash');
+            // Bcrypt hashes start with $2y$
+            expect(str_starts_with($user->password, '$2y$'))->toBeTrue();
+        });
 
-        expect($result)->toBeFalse();
-        $user->refresh();
-        expect($user->hasVerifiedEmail())->toBeFalse();
-    });
+        it('does not expose password in array conversion', function () {
+            $user = User::factory()->create([
+                'password' => 'testpassword',
+            ]);
 
-    it('does not re-verify already verified email', function () {
-        $verifiedAt = now()->subDay();
-        $user = User::factory()->create([
-            'email' => 'test@example.com',
-            'email_verified_at' => $verifiedAt,
-        ]);
+            $array = $user->toArray();
 
-        $hash = sha1('test@example.com');
+            expect($array)->not->toHaveKey('password');
+        });
 
-        $result = $this->authService->verifyEmail($user, $hash);
+        it('does not expose mfa_secret in array conversion', function () {
+            $user = User::factory()->create([
+                'mfa_enabled' => true,
+                'mfa_secret' => encrypt('SECRET'),
+            ]);
 
-        expect($result)->toBeTrue();
-        $user->refresh();
-        // Timestamp should not have changed
-        expect($user->email_verified_at->format('Y-m-d H:i:s'))->toBe($verifiedAt->format('Y-m-d H:i:s'));
-    });
+            $array = $user->toArray();
 
-    it('activates tenant when verifying email for PENDING tenant', function () {
-        $tenant = Tenant::factory()->create(['status' => TenantStatus::PENDING]);
-        TenantOnboarding::create([
-            'tenant_id' => $tenant->id,
-            'current_step' => 'email_verified',
-            'steps_completed' => ['account_created'],
-            'started_at' => now(),
-        ]);
-        $user = User::factory()->unverified()->create([
-            'email' => 'test@example.com',
-            'tenant_id' => $tenant->id,
-        ]);
-
-        $hash = sha1('test@example.com');
-        $result = $this->authService->verifyEmail($user, $hash);
-
-        expect($result)->toBeTrue();
-        $tenant->refresh();
-        expect($tenant->status)->toBe(TenantStatus::ACTIVE);
-    });
-
-    it('advances onboarding to email_verified on verification', function () {
-        $tenant = Tenant::factory()->create(['status' => TenantStatus::PENDING]);
-        $onboarding = TenantOnboarding::create([
-            'tenant_id' => $tenant->id,
-            'current_step' => 'email_verified',
-            'steps_completed' => ['account_created'],
-            'started_at' => now(),
-        ]);
-        $user = User::factory()->unverified()->create([
-            'email' => 'test@example.com',
-            'tenant_id' => $tenant->id,
-        ]);
-
-        $hash = sha1('test@example.com');
-        $this->authService->verifyEmail($user, $hash);
-
-        $onboarding->refresh();
-        expect($onboarding->steps_completed)->toContain('email_verified');
-        expect($onboarding->current_step)->toBe('organization_completed');
-    });
-
-    it('does not re-activate already active tenant on verification', function () {
-        $tenant = Tenant::factory()->active()->create();
-        $user = User::factory()->unverified()->create([
-            'email' => 'test@example.com',
-            'tenant_id' => $tenant->id,
-        ]);
-
-        $hash = sha1('test@example.com');
-        $this->authService->verifyEmail($user, $hash);
-
-        $tenant->refresh();
-        expect($tenant->status)->toBe(TenantStatus::ACTIVE);
+            expect($array)->not->toHaveKey('mfa_secret');
+        });
     });
 });

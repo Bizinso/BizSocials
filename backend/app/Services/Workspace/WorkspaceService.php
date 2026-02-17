@@ -235,4 +235,97 @@ final class WorkspaceService extends BaseService
             return $workspace;
         });
     }
+
+    /**
+     * Switch user's current workspace context.
+     * This sets the workspace in the session for subsequent requests.
+     */
+    public function switchWorkspace(User $user, Workspace $workspace): Workspace
+    {
+        // Verify workspace belongs to user's tenant
+        if ($workspace->tenant_id !== $user->tenant_id) {
+            throw ValidationException::withMessages([
+                'workspace' => ['Workspace does not belong to your organization.'],
+            ]);
+        }
+
+        // Verify user is a member of the workspace
+        if (!$workspace->hasMember($user->id)) {
+            throw ValidationException::withMessages([
+                'workspace' => ['You are not a member of this workspace.'],
+            ]);
+        }
+
+        // Verify workspace is accessible
+        if (!$workspace->hasAccess()) {
+            throw ValidationException::withMessages([
+                'workspace' => ['This workspace is not accessible.'],
+            ]);
+        }
+
+        // Store workspace ID in session
+        session(['current_workspace_id' => $workspace->id]);
+
+        // Also bind to container for current request
+        app()->instance('current_workspace', $workspace);
+
+        $this->log('Workspace switched', [
+            'user_id' => $user->id,
+            'workspace_id' => $workspace->id,
+        ]);
+
+        return $workspace;
+    }
+
+    /**
+     * Get the current workspace for a user from session.
+     */
+    public function getCurrentWorkspace(User $user): ?Workspace
+    {
+        // Check if already bound in container
+        if (app()->has('current_workspace')) {
+            return app('current_workspace');
+        }
+
+        // Get from session
+        $workspaceId = session('current_workspace_id');
+
+        if ($workspaceId === null) {
+            return null;
+        }
+
+        // Load workspace and verify access
+        $workspace = Workspace::find($workspaceId);
+
+        if ($workspace === null) {
+            // Clear invalid session
+            session()->forget('current_workspace_id');
+            return null;
+        }
+
+        // Verify user still has access
+        if ($workspace->tenant_id !== $user->tenant_id || !$workspace->hasMember($user->id)) {
+            session()->forget('current_workspace_id');
+            return null;
+        }
+
+        // Bind to container
+        app()->instance('current_workspace', $workspace);
+
+        return $workspace;
+    }
+
+    /**
+     * Clear current workspace from session.
+     */
+    public function clearCurrentWorkspace(): void
+    {
+        session()->forget('current_workspace_id');
+
+        if (app()->has('current_workspace')) {
+            app()->forgetInstance('current_workspace');
+        }
+
+        $this->log('Workspace context cleared');
+    }
 }

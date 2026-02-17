@@ -3,6 +3,7 @@
 .env
 .env.backup
 .env.production
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -25,3 +26,6 @@ Homestead.yaml
 Thumbs.db
 npm-debug.log
 yarn-error.log
+
+# Test cache
+/--cache-result

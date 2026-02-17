@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\Billing\SubscriptionController;
 use App\Http\Controllers\Api\V1\Content\ApprovalController;
 use App\Http\Controllers\Api\V1\Content\ApprovalWorkflowController;
 use App\Http\Controllers\Api\V1\Content\BulkPostController;
+use App\Http\Controllers\Api\V1\Content\CalendarController;
 use App\Http\Controllers\Api\V1\Content\PostController;
 use App\Http\Controllers\Api\V1\Content\PostMediaController;
 use App\Http\Controllers\Api\V1\Content\PostNoteController;
@@ -117,6 +118,8 @@ Route::post('/webhooks/razorpay', [\App\Http\Controllers\Api\V1\Billing\WebhookC
 Route::prefix('webhooks')->group(function () {
     Route::get('/facebook', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'facebookVerify']);
     Route::post('/facebook', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'facebookHandle']);
+    Route::get('/instagram', [\App\Http\Controllers\Api\Webhooks\SocialWebhookController::class, 'verifyInstagram']);
+    Route::post('/instagram', [\App\Http\Controllers\Api\Webhooks\SocialWebhookController::class, 'handleInstagram']);
     Route::get('/twitter', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'twitterCrc']);
     Route::post('/twitter', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'twitterHandle']);
     Route::post('/linkedin', [\App\Http\Controllers\Api\V1\Social\PlatformWebhookController::class, 'linkedinHandle']);
@@ -190,6 +193,18 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::put('/members/{userId}', [TenantMemberController::class, 'update']);
         Route::delete('/members/{userId}', [TenantMemberController::class, 'destroy']);
 
+        // User management (admin only)
+        Route::middleware('admin')->prefix('users')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\User\UserManagementController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\User\UserManagementController::class, 'store']);
+            Route::get('/{userId}', [\App\Http\Controllers\Api\V1\User\UserManagementController::class, 'show']);
+            Route::put('/{userId}/role', [\App\Http\Controllers\Api\V1\User\UserManagementController::class, 'updateRole']);
+            Route::delete('/{userId}', [\App\Http\Controllers\Api\V1\User\UserManagementController::class, 'destroy']);
+        });
+
+        // User permissions (all authenticated users)
+        Route::get('/permissions', [\App\Http\Controllers\Api\V1\User\UserManagementController::class, 'permissions']);
+
         // Tenant invitations
         Route::get('/invitations', [InvitationController::class, 'index']);
         Route::post('/invitations', [InvitationController::class, 'store']);
@@ -198,9 +213,11 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     });
 
     // Workspace routes
+    Route::get('/workspaces/current', [WorkspaceController::class, 'current']);
     Route::apiResource('workspaces', WorkspaceController::class);
     Route::post('/workspaces/{workspace}/archive', [WorkspaceController::class, 'archive']);
     Route::post('/workspaces/{workspace}/restore', [WorkspaceController::class, 'restore']);
+    Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'switch']);
     Route::put('/workspaces/{workspace}/settings', [WorkspaceController::class, 'updateSettings']);
 
     // Workspace members
@@ -231,14 +248,14 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     // OAuth routes
     Route::prefix('oauth')->group(function () {
         Route::get('/{platform}/authorize', [OAuthController::class, 'getAuthorizationUrl'])
-            ->where('platform', 'linkedin|facebook|instagram|twitter');
+            ->where('platform', 'linkedin|facebook|instagram|twitter|youtube');
         Route::get('/{platform}/callback', [OAuthController::class, 'callback'])
-            ->where('platform', 'linkedin|facebook|instagram|twitter')
+            ->where('platform', 'linkedin|facebook|instagram|twitter|youtube')
             ->withoutMiddleware(['auth:sanctum', 'tenant']);
         Route::post('/{platform}/exchange', [OAuthController::class, 'exchange'])
-            ->where('platform', 'linkedin|facebook|instagram|twitter');
+            ->where('platform', 'linkedin|facebook|instagram|twitter|youtube');
         Route::post('/{platform}/connect', [OAuthController::class, 'connect'])
-            ->where('platform', 'linkedin|facebook|instagram|twitter');
+            ->where('platform', 'linkedin|facebook|instagram|twitter|youtube');
     });
 
     // Social accounts within workspace context
@@ -270,6 +287,10 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::post('/posts/bulk-submit', [BulkPostController::class, 'bulkSubmit']);
         Route::post('/posts/bulk-schedule', [BulkPostController::class, 'bulkSchedule']);
 
+        // Calendar
+        Route::get('/calendar', [CalendarController::class, 'index']);
+        Route::put('/calendar/posts/{post}/reschedule', [CalendarController::class, 'reschedule']);
+
         // Post Media
         Route::get('/posts/{post}/media', [PostMediaController::class, 'index']);
         Route::post('/posts/{post}/media', [PostMediaController::class, 'store']);
@@ -300,6 +321,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         Route::get('/media-library-folders', [MediaLibraryController::class, 'folders']);
         Route::post('/media-library-folders', [MediaLibraryController::class, 'createFolder']);
         Route::post('/media-library/move', [MediaLibraryController::class, 'moveItems']);
+        Route::get('/media-library-stats', [MediaLibraryController::class, 'usageStats']);
 
         // Content Categories
         Route::apiResource('content-categories', ContentCategoryController::class);
@@ -358,8 +380,10 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
 
         // WhatsApp Templates
         Route::apiResource('whatsapp-templates', \App\Http\Controllers\Api\V1\WhatsApp\WhatsAppTemplateController::class);
+        Route::post('/whatsapp-templates/sync-all', [\App\Http\Controllers\Api\V1\WhatsApp\WhatsAppTemplateController::class, 'syncAll']);
         Route::post('/whatsapp-templates/{template}/submit', [\App\Http\Controllers\Api\V1\WhatsApp\WhatsAppTemplateController::class, 'submit']);
         Route::post('/whatsapp-templates/{template}/sync', [\App\Http\Controllers\Api\V1\WhatsApp\WhatsAppTemplateController::class, 'sync']);
+        Route::post('/whatsapp-templates/{template}/send', [\App\Http\Controllers\Api\V1\WhatsApp\WhatsAppTemplateController::class, 'send']);
 
         // WhatsApp Campaigns
         Route::apiResource('whatsapp-campaigns', \App\Http\Controllers\Api\V1\WhatsApp\WhatsAppCampaignController::class);

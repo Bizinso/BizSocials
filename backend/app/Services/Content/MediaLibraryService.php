@@ -187,4 +187,43 @@ final class MediaLibraryService extends BaseService
 
         return $deleted;
     }
+
+    /**
+     * Track usage of a media item.
+     */
+    public function trackUsage(MediaLibraryItem $item): void
+    {
+        $item->trackUsage();
+
+        $this->log('Media usage tracked', [
+            'item_id' => $item->id,
+            'usage_count' => $item->usage_count,
+        ]);
+    }
+
+    /**
+     * Get usage statistics for a workspace.
+     *
+     * @return array<string, mixed>
+     */
+    public function getUsageStats(string $workspaceId): array
+    {
+        $items = MediaLibraryItem::forWorkspace($workspaceId)->get();
+
+        return [
+            'total_items' => $items->count(),
+            'total_size' => $items->sum('file_size'),
+            'total_usage' => $items->sum('usage_count'),
+            'by_type' => [
+                'images' => $items->filter(fn($item) => $item->isImage())->count(),
+                'videos' => $items->filter(fn($item) => $item->isVideo())->count(),
+                'documents' => $items->filter(fn($item) => $item->isDocument())->count(),
+            ],
+            'most_used' => $items->sortByDesc('usage_count')->take(10)->values(),
+            'recently_used' => $items->whereNotNull('last_used_at')
+                ->sortByDesc('last_used_at')
+                ->take(10)
+                ->values(),
+        ];
+    }
 }

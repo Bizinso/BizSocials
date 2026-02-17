@@ -107,7 +107,7 @@ final class BulkPostController extends Controller
 
         foreach ($posts as $post) {
             try {
-                $this->postService->schedule($post, $scheduledAt);
+                $this->postService->schedule($post, $scheduledAt, $timezone);
                 $scheduled++;
             } catch (\Throwable $e) {
                 $errors[] = ['post_id' => $post->id, 'error' => $e->getMessage()];

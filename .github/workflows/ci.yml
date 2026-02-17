@@ -67,6 +67,11 @@ jobs:
 
       - name: Install Composer dependencies
         working-directory: backend
+        env:
+          PUSHER_APP_ID: dummy
+          PUSHER_APP_KEY: dummy
+          PUSHER_APP_SECRET: dummy
+          BROADCAST_CONNECTION: log
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Copy environment file
@@ -114,6 +119,11 @@ jobs:
 
       - name: Install Composer dependencies
         working-directory: backend
+        env:
+          PUSHER_APP_ID: dummy
+          PUSHER_APP_KEY: dummy
+          PUSHER_APP_SECRET: dummy
+          BROADCAST_CONNECTION: log
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Check for syntax errors

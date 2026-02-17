@@ -277,9 +277,53 @@ final class WhatsAppWebhookService extends BaseService
 
     private function createInboxItem(WhatsAppMessage $message, WhatsAppConversation $conversation): void
     {
+        // Find or create a SocialAccount for the WhatsApp phone number
+        $phone = $conversation->phoneNumber;
+        
+        $socialAccount = \App\Models\Social\SocialAccount::where([
+            'workspace_id' => $conversation->workspace_id,
+            'platform' => \App\Enums\Social\SocialPlatform::WHATSAPP,
+            'platform_account_id' => $phone->phone_number_id,
+        ])->first();
+
+        if (!$socialAccount) {
+            // Get the first admin user from the workspace, or any user from the tenant
+            $workspace = \App\Models\Workspace\Workspace::find($conversation->workspace_id);
+            $connectedByUser = $workspace?->members()
+                ->wherePivot('role', \App\Enums\Workspace\WorkspaceRole::ADMIN)
+                ->first();
+            
+            // Fallback to any workspace member if no admin found
+            if (!$connectedByUser) {
+                $connectedByUser = $workspace?->members()->first();
+            }
+            
+            // Fallback to any tenant user if no workspace members
+            if (!$connectedByUser) {
+                $connectedByUser = $workspace?->tenant->users()->first();
+            }
+            
+            // If still no user found, throw an exception
+            if (!$connectedByUser) {
+                throw new \RuntimeException('Cannot create SocialAccount: No user found in workspace or tenant');
+            }
+            
+            $socialAccount = \App\Models\Social\SocialAccount::create([
+                'workspace_id' => $conversation->workspace_id,
+                'platform' => \App\Enums\Social\SocialPlatform::WHATSAPP,
+                'platform_account_id' => $phone->phone_number_id,
+                'account_name' => $phone->display_name,
+                'account_username' => $phone->phone_number,
+                'is_active' => true,
+                'access_token_encrypted' => \Illuminate\Support\Facades\Crypt::encryptString('whatsapp_phone_' . $phone->phone_number_id),
+                'connected_by_user_id' => $connectedByUser->id,
+                'connected_at' => now(),
+            ]);
+        }
+
         InboxItem::create([
             'workspace_id' => $conversation->workspace_id,
-            'social_account_id' => $conversation->whatsapp_phone_number_id,
+            'social_account_id' => $socialAccount->id,
             'item_type' => InboxItemType::WHATSAPP_MESSAGE,
             'status' => InboxItemStatus::UNREAD,
             'platform_item_id' => $message->wamid ?? $message->id,

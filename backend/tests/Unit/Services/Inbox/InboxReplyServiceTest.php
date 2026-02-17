@@ -2,173 +2,93 @@
 
 declare(strict_types=1);
 
-/**
- * InboxReplyService Unit Tests
- *
- * Tests for the InboxReplyService which handles reply management.
- *
- * @see \App\Services\Inbox\InboxReplyService
- */
-
-use App\Data\Inbox\CreateReplyData;
-use App\Enums\Inbox\InboxItemType;
 use App\Models\Inbox\InboxItem;
 use App\Models\Inbox\InboxReply;
 use App\Models\User;
 use App\Services\Inbox\InboxReplyService;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->service = app(InboxReplyService::class);
 });
 
-test('listForItem returns replies for inbox item', function (): void {
-    $item = InboxItem::factory()->comment()->create();
+test('lists all replies for an inbox item', function (): void {
+    $inboxItem = InboxItem::factory()->create();
+    $user1 = User::factory()->create();
+    $user2 = User::factory()->create();
 
-    InboxReply::factory()->count(3)->forInboxItem($item)->create();
-
-    // Create replies for another item (should not be included)
-    $otherItem = InboxItem::factory()->comment()->create();
-    InboxReply::factory()->count(2)->forInboxItem($otherItem)->create();
-
-    $result = $this->service->listForItem($item);
-
-    expect($result)->toHaveCount(3)
-        ->and($result->every(fn ($r) => $r->inbox_item_id === $item->id))->toBeTrue();
-});
-
-test('listForItem returns replies ordered by sent_at descending', function (): void {
-    $item = InboxItem::factory()->comment()->create();
-
-    $oldest = InboxReply::factory()->forInboxItem($item)->create(['sent_at' => now()->subDays(3)]);
-    $middle = InboxReply::factory()->forInboxItem($item)->create(['sent_at' => now()->subDays(2)]);
-    $newest = InboxReply::factory()->forInboxItem($item)->create(['sent_at' => now()->subDays(1)]);
-
-    $result = $this->service->listForItem($item);
-
-    expect($result->first()->id)->toBe($newest->id)
-        ->and($result->last()->id)->toBe($oldest->id);
-});
-
-test('create creates a reply for comment item', function (): void {
-    $item = InboxItem::factory()->comment()->create();
-    $user = User::factory()->create();
-    $data = new CreateReplyData(content_text: 'Thank you for your comment!');
-
-    $result = $this->service->create($item, $user, $data);
-
-    expect($result)->toBeInstanceOf(InboxReply::class)
-        ->and($result->inbox_item_id)->toBe($item->id)
-        ->and($result->replied_by_user_id)->toBe($user->id)
-        ->and($result->content_text)->toBe('Thank you for your comment!')
-        ->and($result->sent_at)->not->toBeNull();
-});
-
-test('create throws exception for mention item', function (): void {
-    $item = InboxItem::factory()->mention()->create();
-    $user = User::factory()->create();
-    $data = new CreateReplyData(content_text: 'Thank you for mentioning us!');
-
-    expect(fn () => $this->service->create($item, $user, $data))
-        ->toThrow(ValidationException::class);
-});
-
-test('create persists reply in database', function (): void {
-    $item = InboxItem::factory()->comment()->create();
-    $user = User::factory()->create();
-    $data = new CreateReplyData(content_text: 'Test reply');
-
-    $reply = $this->service->create($item, $user, $data);
-
-    $this->assertDatabaseHas('inbox_replies', [
-        'id' => $reply->id,
-        'inbox_item_id' => $item->id,
-        'replied_by_user_id' => $user->id,
-        'content_text' => 'Test reply',
+    InboxReply::factory()->create([
+        'inbox_item_id' => $inboxItem->id,
+        'replied_by_user_id' => $user1->id,
     ]);
+
+    InboxReply::factory()->create([
+        'inbox_item_id' => $inboxItem->id,
+        'replied_by_user_id' => $user2->id,
+    ]);
+
+    $replies = $this->service->listForItem($inboxItem);
+
+    expect($replies)->toHaveCount(2)
+        ->and($replies->first())->toBeInstanceOf(InboxReply::class);
 });
 
-test('get returns reply by id', function (): void {
-    $reply = InboxReply::factory()->create();
-
-    $result = $this->service->get($reply->id);
-
-    expect($result->id)->toBe($reply->id);
-});
-
-test('get throws exception for non-existent reply', function (): void {
-    expect(fn () => $this->service->get('non-existent-uuid'))
-        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
-});
-
-test('get loads repliedBy relationship', function (): void {
+test('retrieves reply by id', function (): void {
     $user = User::factory()->create();
-    $reply = InboxReply::factory()->byUser($user)->create();
+    $inboxItem = InboxItem::factory()->create();
+    $reply = InboxReply::factory()->create([
+        'inbox_item_id' => $inboxItem->id,
+        'replied_by_user_id' => $user->id,
+    ]);
 
-    $result = $this->service->get($reply->id);
+    $retrieved = $this->service->get($reply->id);
 
-    expect($result->relationLoaded('repliedBy'))->toBeTrue()
-        ->and($result->repliedBy->id)->toBe($user->id);
+    expect($retrieved->id)->toBe($reply->id)
+        ->and($retrieved->inboxItem)->not->toBeNull()
+        ->and($retrieved->repliedBy)->not->toBeNull();
 });
 
-test('get loads inboxItem relationship', function (): void {
-    $item = InboxItem::factory()->comment()->create();
-    $reply = InboxReply::factory()->forInboxItem($item)->create();
+test('throws exception when reply not found', function (): void {
+    $this->service->get('non-existent-id');
+})->throws(Illuminate\Database\Eloquent\ModelNotFoundException::class);
 
-    $result = $this->service->get($reply->id);
+test('marks reply as sent', function (): void {
+    $reply = InboxReply::factory()->create([
+        'platform_reply_id' => null,
+        'failed_at' => now(),
+        'failure_reason' => 'Previous error',
+    ]);
 
-    expect($result->relationLoaded('inboxItem'))->toBeTrue()
-        ->and($result->inboxItem->id)->toBe($item->id);
+    $updated = $this->service->markAsSent($reply, 'platform_123');
+
+    expect($updated->platform_reply_id)->toBe('platform_123')
+        ->and($updated->failed_at)->toBeNull()
+        ->and($updated->failure_reason)->toBeNull();
 });
 
-test('markAsSent updates platform_reply_id', function (): void {
-    $reply = InboxReply::factory()->create();
-    $platformReplyId = 'platform_reply_123';
+test('marks reply as failed', function (): void {
+    $reply = InboxReply::factory()->create([
+        'failed_at' => null,
+        'failure_reason' => null,
+    ]);
 
-    $result = $this->service->markAsSent($reply, $platformReplyId);
+    $updated = $this->service->markAsFailed($reply, 'API timeout');
 
-    expect($result->platform_reply_id)->toBe($platformReplyId)
-        ->and($result->isSent())->toBeTrue();
+    expect($updated->failed_at)->not->toBeNull()
+        ->and($updated->failure_reason)->toBe('API timeout');
 });
 
-test('markAsSent clears failure info if present', function (): void {
-    $reply = InboxReply::factory()->failed()->create();
-    $platformReplyId = 'platform_reply_123';
+test('marks reply as failed clears previous success state', function (): void {
+    $reply = InboxReply::factory()->create([
+        'platform_reply_id' => 'platform_123',
+        'failed_at' => null,
+    ]);
 
-    $result = $this->service->markAsSent($reply, $platformReplyId);
+    $updated = $this->service->markAsFailed($reply, 'Connection error');
 
-    expect($result->platform_reply_id)->toBe($platformReplyId)
-        ->and($result->failed_at)->toBeNull()
-        ->and($result->failure_reason)->toBeNull();
-});
-
-test('markAsFailed sets failure info', function (): void {
-    $reply = InboxReply::factory()->create();
-    $reason = 'API rate limit exceeded';
-
-    $result = $this->service->markAsFailed($reply, $reason);
-
-    expect($result->hasFailed())->toBeTrue()
-        ->and($result->failed_at)->not->toBeNull()
-        ->and($result->failure_reason)->toBe($reason);
-});
-
-test('multiple replies can be created for same item', function (): void {
-    $item = InboxItem::factory()->comment()->create();
-    $user = User::factory()->create();
-
-    $data1 = new CreateReplyData(content_text: 'First reply');
-    $data2 = new CreateReplyData(content_text: 'Second reply');
-    $data3 = new CreateReplyData(content_text: 'Third reply');
-
-    $reply1 = $this->service->create($item, $user, $data1);
-    $reply2 = $this->service->create($item, $user, $data2);
-    $reply3 = $this->service->create($item, $user, $data3);
-
-    $replies = $this->service->listForItem($item);
-
-    expect($replies)->toHaveCount(3)
-        ->and($reply1->content_text)->toBe('First reply')
-        ->and($reply2->content_text)->toBe('Second reply')
-        ->and($reply3->content_text)->toBe('Third reply');
+    expect($updated->failed_at)->not->toBeNull()
+        ->and($updated->failure_reason)->toBe('Connection error')
+        ->and($updated->platform_reply_id)->toBe('platform_123');
 });

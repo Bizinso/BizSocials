@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'workspace.member' => \App\Http\Middleware\EnsureWorkspaceMember::class,
             'tenant' => \App\Http\Middleware\ResolveTenant::class,
+            'testing' => \App\Http\Middleware\EnsureTestingEnvironment::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

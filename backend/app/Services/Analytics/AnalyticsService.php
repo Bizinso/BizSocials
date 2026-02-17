@@ -11,6 +11,7 @@ use App\Models\Content\PostTarget;
 use App\Models\Social\SocialAccount;
 use App\Services\BaseService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -40,73 +41,79 @@ final class AnalyticsService extends BaseService
      */
     public function getDashboardMetrics(string $workspaceId, string $period = '30d'): array
     {
-        $dateRange = $this->parsePeriod($period);
-        $start = $dateRange['start'];
-        $end = $dateRange['end'];
+        // Cache key includes workspace ID and period for unique caching
+        $cacheKey = "analytics:dashboard:{$workspaceId}:{$period}";
+        
+        // Cache for 5 minutes to balance freshness and performance
+        return Cache::remember($cacheKey, 300, function () use ($workspaceId, $period): array {
+            $dateRange = $this->parsePeriod($period);
+            $start = $dateRange['start'];
+            $end = $dateRange['end'];
 
-        // Get aggregated metrics for the period
-        $aggregates = AnalyticsAggregate::forWorkspace($workspaceId)
-            ->workspaceTotals()
-            ->daily()
-            ->inDateRange($start, $end)
-            ->get();
+            // Get aggregated metrics for the period
+            $aggregates = AnalyticsAggregate::forWorkspace($workspaceId)
+                ->workspaceTotals()
+                ->daily()
+                ->inDateRange($start, $end)
+                ->get();
 
-        // Calculate totals
-        $totals = [
-            'impressions' => $aggregates->sum('impressions'),
-            'reach' => $aggregates->sum('reach'),
-            'engagements' => $aggregates->sum('engagements'),
-            'likes' => $aggregates->sum('likes'),
-            'comments' => $aggregates->sum('comments'),
-            'shares' => $aggregates->sum('shares'),
-            'saves' => $aggregates->sum('saves'),
-            'clicks' => $aggregates->sum('clicks'),
-            'video_views' => $aggregates->sum('video_views'),
-            'posts_count' => $aggregates->sum('posts_count'),
-        ];
+            // Calculate totals
+            $totals = [
+                'impressions' => $aggregates->sum('impressions'),
+                'reach' => $aggregates->sum('reach'),
+                'engagements' => $aggregates->sum('engagements'),
+                'likes' => $aggregates->sum('likes'),
+                'comments' => $aggregates->sum('comments'),
+                'shares' => $aggregates->sum('shares'),
+                'saves' => $aggregates->sum('saves'),
+                'clicks' => $aggregates->sum('clicks'),
+                'video_views' => $aggregates->sum('video_views'),
+                'posts_count' => $aggregates->sum('posts_count'),
+            ];
 
-        // Calculate engagement rate
-        $totals['engagement_rate'] = $totals['reach'] > 0
-            ? round(($totals['engagements'] / $totals['reach']) * 100, 2)
-            : 0.0;
+            // Calculate engagement rate
+            $totals['engagement_rate'] = $totals['reach'] > 0
+                ? round(($totals['engagements'] / $totals['reach']) * 100, 2)
+                : 0.0;
 
-        // Calculate averages
-        $dayCount = max($aggregates->count(), 1);
-        $totals['avg_daily_engagements'] = round($totals['engagements'] / $dayCount, 2);
-        $totals['avg_engagements_per_post'] = $totals['posts_count'] > 0
-            ? round($totals['engagements'] / $totals['posts_count'], 2)
-            : 0.0;
+            // Calculate averages
+            $dayCount = max($aggregates->count(), 1);
+            $totals['avg_daily_engagements'] = round($totals['engagements'] / $dayCount, 2);
+            $totals['avg_engagements_per_post'] = $totals['posts_count'] > 0
+                ? round($totals['engagements'] / $totals['posts_count'], 2)
+                : 0.0;
 
-        // Get follower data from the most recent aggregate
-        $latestAggregate = $aggregates->sortByDesc('date')->first();
-        $firstAggregate = $aggregates->sortBy('date')->first();
+            // Get follower data from the most recent aggregate
+            $latestAggregate = $aggregates->sortByDesc('date')->first();
+            $firstAggregate = $aggregates->sortBy('date')->first();
 
-        $totals['followers_current'] = $latestAggregate?->followers_end ?? 0;
-        $totals['followers_change'] = $latestAggregate && $firstAggregate
-            ? $latestAggregate->followers_end - $firstAggregate->followers_start
-            : 0;
-        $totals['followers_growth_rate'] = $firstAggregate && $firstAggregate->followers_start > 0
-            ? round(($totals['followers_change'] / $firstAggregate->followers_start) * 100, 2)
-            : 0.0;
+            $totals['followers_current'] = $latestAggregate?->followers_end ?? 0;
+            $totals['followers_change'] = $latestAggregate && $firstAggregate
+                ? $latestAggregate->followers_end - $firstAggregate->followers_start
+                : 0;
+            $totals['followers_growth_rate'] = $firstAggregate && $firstAggregate->followers_start > 0
+                ? round(($totals['followers_change'] / $firstAggregate->followers_start) * 100, 2)
+                : 0.0;
 
-        // Get comparison with previous period
-        $comparison = $this->getMetricsComparison($workspaceId, $start, $end);
+            // Get comparison with previous period
+            $comparison = $this->getMetricsComparison($workspaceId, $start, $end);
 
-        $this->log('Dashboard metrics retrieved', [
-            'workspace_id' => $workspaceId,
-            'period' => $period,
-            'days' => $dayCount,
-        ]);
+            $this->log('Dashboard metrics retrieved', [
+                'workspace_id' => $workspaceId,
+                'period' => $period,
+                'days' => $dayCount,
+            ]);
 
-        return [
-            'period' => [
-                'start' => $start->toDateString(),
-                'end' => $end->toDateString(),
-                'days' => $start->diffInDays($end) + 1,
-            ],
-            'metrics' => $totals,
-            'comparison' => $comparison,
-        ];
+            return [
+                'period' => [
+                    'start' => $start->toDateString(),
+                    'end' => $end->toDateString(),
+                    'days' => $start->diffInDays($end) + 1,
+                ],
+                'metrics' => $totals,
+                'comparison' => $comparison,
+            ];
+        });
     }
 
     /**
@@ -314,34 +321,39 @@ final class AnalyticsService extends BaseService
      */
     public function getEngagementTrend(string $workspaceId, Carbon $start, Carbon $end): array
     {
-        $aggregates = AnalyticsAggregate::forWorkspace($workspaceId)
-            ->workspaceTotals()
-            ->daily()
-            ->inDateRange($start, $end)
-            ->orderBy('date')
-            ->get();
+        $cacheKey = "analytics:engagement_trend:{$workspaceId}:{$start->toDateString()}:{$end->toDateString()}";
+        
+        // Cache for 10 minutes
+        return Cache::remember($cacheKey, 600, function () use ($workspaceId, $start, $end): array {
+            $aggregates = AnalyticsAggregate::forWorkspace($workspaceId)
+                ->workspaceTotals()
+                ->daily()
+                ->inDateRange($start, $end)
+                ->orderBy('date')
+                ->get();
 
-        $trend = [];
-        $currentDate = $start->copy();
+            $trend = [];
+            $currentDate = $start->copy();
 
-        while ($currentDate <= $end) {
-            $dateString = $currentDate->toDateString();
-            $aggregate = $aggregates->firstWhere('date', $currentDate->copy());
+            while ($currentDate <= $end) {
+                $dateString = $currentDate->toDateString();
+                $aggregate = $aggregates->firstWhere('date', $currentDate->copy());
 
-            $trend[] = [
-                'date' => $dateString,
-                'engagements' => $aggregate?->engagements ?? 0,
-                'likes' => $aggregate?->likes ?? 0,
-                'comments' => $aggregate?->comments ?? 0,
-                'shares' => $aggregate?->shares ?? 0,
-                'saves' => $aggregate?->saves ?? 0,
-                'engagement_rate' => $aggregate?->engagement_rate ?? 0.0,
-            ];
+                $trend[] = [
+                    'date' => $dateString,
+                    'engagements' => $aggregate?->engagements ?? 0,
+                    'likes' => $aggregate?->likes ?? 0,
+                    'comments' => $aggregate?->comments ?? 0,
+                    'shares' => $aggregate?->shares ?? 0,
+                    'saves' => $aggregate?->saves ?? 0,
+                    'engagement_rate' => $aggregate?->engagement_rate ?? 0.0,
+                ];
 
-            $currentDate->addDay();
-        }
+                $currentDate->addDay();
+            }
 
-        return $trend;
+            return $trend;
+        });
     }
 
     /**
@@ -356,27 +368,32 @@ final class AnalyticsService extends BaseService
      */
     public function getFollowerGrowthTrend(string $workspaceId, Carbon $start, Carbon $end): array
     {
-        $aggregates = AnalyticsAggregate::forWorkspace($workspaceId)
-            ->workspaceTotals()
-            ->daily()
-            ->inDateRange($start, $end)
-            ->orderBy('date')
-            ->get();
+        $cacheKey = "analytics:follower_trend:{$workspaceId}:{$start->toDateString()}:{$end->toDateString()}";
+        
+        // Cache for 10 minutes
+        return Cache::remember($cacheKey, 600, function () use ($workspaceId, $start, $end): array {
+            $aggregates = AnalyticsAggregate::forWorkspace($workspaceId)
+                ->workspaceTotals()
+                ->daily()
+                ->inDateRange($start, $end)
+                ->orderBy('date')
+                ->get();
 
-        $trend = [];
-        $previousFollowers = null;
+            $trend = [];
+            $previousFollowers = null;
 
-        foreach ($aggregates as $aggregate) {
-            $trend[] = [
-                'date' => $aggregate->date->toDateString(),
-                'followers' => $aggregate->followers_end,
-                'change' => $aggregate->followers_change,
-                'growth_rate' => $aggregate->getFollowerGrowthRate(),
-            ];
-            $previousFollowers = $aggregate->followers_end;
-        }
+            foreach ($aggregates as $aggregate) {
+                $trend[] = [
+                    'date' => $aggregate->date->toDateString(),
+                    'followers' => $aggregate->followers_end,
+                    'change' => $aggregate->followers_change,
+                    'growth_rate' => $aggregate->getFollowerGrowthRate(),
+                ];
+                $previousFollowers = $aggregate->followers_end;
+            }
 
-        return $trend;
+            return $trend;
+        });
     }
 
     /**
@@ -391,60 +408,65 @@ final class AnalyticsService extends BaseService
      */
     public function getMetricsByPlatform(string $workspaceId, Carbon $start, Carbon $end): array
     {
-        // Get all post targets with metrics for the period
-        $targets = PostTarget::whereHas('post', function ($query) use ($workspaceId, $start, $end): void {
-            $query->forWorkspace($workspaceId)
-                ->published()
-                ->whereBetween('published_at', [$start, $end]);
-        })->get();
+        $cacheKey = "analytics:platform_metrics:{$workspaceId}:{$start->toDateString()}:{$end->toDateString()}";
+        
+        // Cache for 10 minutes
+        return Cache::remember($cacheKey, 600, function () use ($workspaceId, $start, $end): array {
+            // Get all post targets with metrics for the period
+            $targets = PostTarget::whereHas('post', function ($query) use ($workspaceId, $start, $end): void {
+                $query->forWorkspace($workspaceId)
+                    ->published()
+                    ->whereBetween('published_at', [$start, $end]);
+            })->get();
 
-        $platformMetrics = [];
+            $platformMetrics = [];
 
-        foreach ($targets as $target) {
-            $platform = $target->platform_code;
+            foreach ($targets as $target) {
+                $platform = $target->platform_code;
 
-            if (!isset($platformMetrics[$platform])) {
-                $platformMetrics[$platform] = [
-                    'platform' => $platform,
-                    'posts_count' => 0,
-                    'impressions' => 0,
-                    'reach' => 0,
-                    'engagements' => 0,
-                    'likes' => 0,
-                    'comments' => 0,
-                    'shares' => 0,
-                    'saves' => 0,
-                    'clicks' => 0,
-                    'video_views' => 0,
-                ];
+                if (!isset($platformMetrics[$platform])) {
+                    $platformMetrics[$platform] = [
+                        'platform' => $platform,
+                        'posts_count' => 0,
+                        'impressions' => 0,
+                        'reach' => 0,
+                        'engagements' => 0,
+                        'likes' => 0,
+                        'comments' => 0,
+                        'shares' => 0,
+                        'saves' => 0,
+                        'clicks' => 0,
+                        'video_views' => 0,
+                    ];
+                }
+
+                $metrics = $target->metrics ?? [];
+                $platformMetrics[$platform]['posts_count']++;
+                $platformMetrics[$platform]['impressions'] += $metrics['impressions'] ?? 0;
+                $platformMetrics[$platform]['reach'] += $metrics['reach'] ?? 0;
+                $platformMetrics[$platform]['likes'] += $metrics['likes'] ?? 0;
+                $platformMetrics[$platform]['comments'] += $metrics['comments'] ?? 0;
+                $platformMetrics[$platform]['shares'] += $metrics['shares'] ?? 0;
+                $platformMetrics[$platform]['saves'] += $metrics['saves'] ?? 0;
+                $platformMetrics[$platform]['clicks'] += $metrics['clicks'] ?? 0;
+                $platformMetrics[$platform]['video_views'] += $metrics['video_views'] ?? 0;
             }
 
-            $metrics = $target->metrics ?? [];
-            $platformMetrics[$platform]['posts_count']++;
-            $platformMetrics[$platform]['impressions'] += $metrics['impressions'] ?? 0;
-            $platformMetrics[$platform]['reach'] += $metrics['reach'] ?? 0;
-            $platformMetrics[$platform]['likes'] += $metrics['likes'] ?? 0;
-            $platformMetrics[$platform]['comments'] += $metrics['comments'] ?? 0;
-            $platformMetrics[$platform]['shares'] += $metrics['shares'] ?? 0;
-            $platformMetrics[$platform]['saves'] += $metrics['saves'] ?? 0;
-            $platformMetrics[$platform]['clicks'] += $metrics['clicks'] ?? 0;
-            $platformMetrics[$platform]['video_views'] += $metrics['video_views'] ?? 0;
-        }
+            // Calculate engagements and rates for each platform
+            foreach ($platformMetrics as $platform => $metrics) {
+                $engagements = $metrics['likes'] + $metrics['comments']
+                    + $metrics['shares'] + $metrics['saves'];
+                $platformMetrics[$platform]['engagements'] = $engagements;
+                $platformMetrics[$platform]['engagement_rate'] = $metrics['reach'] > 0
+                    ? round(($engagements / $metrics['reach']) * 100, 2)
+                    : 0.0;
+                $platformMetrics[$platform]['avg_engagements_per_post'] = $metrics['posts_count'] > 0
+                    ? round($engagements / $metrics['posts_count'], 2)
+                    : 0.0;
+            }
 
-        // Calculate engagements and rates for each platform
-        foreach ($platformMetrics as $platform => $metrics) {
-            $engagements = $metrics['likes'] + $metrics['comments']
-                + $metrics['shares'] + $metrics['saves'];
-            $platformMetrics[$platform]['engagements'] = $engagements;
-            $platformMetrics[$platform]['engagement_rate'] = $metrics['reach'] > 0
-                ? round(($engagements / $metrics['reach']) * 100, 2)
-                : 0.0;
-            $platformMetrics[$platform]['avg_engagements_per_post'] = $metrics['posts_count'] > 0
-                ? round($engagements / $metrics['posts_count'], 2)
-                : 0.0;
-        }
-
-        return array_values($platformMetrics);
+            return array_values($platformMetrics);
+        });
     }
 
     /**
@@ -475,5 +497,53 @@ final class AnalyticsService extends BaseService
             'start' => $start->startOfDay(),
             'end' => $end->endOfDay(),
         ];
+    }
+
+    /**
+     * Clear analytics cache for a workspace.
+     *
+     * Should be called when new analytics data is collected or aggregated.
+     *
+     * @param string $workspaceId The workspace UUID
+     * @return void
+     */
+    public function clearCache(string $workspaceId): void
+    {
+        // Clear all analytics cache keys for this workspace
+        $patterns = [
+            "analytics:dashboard:{$workspaceId}:*",
+            "analytics:engagement_trend:{$workspaceId}:*",
+            "analytics:follower_trend:{$workspaceId}:*",
+            "analytics:platform_metrics:{$workspaceId}:*",
+        ];
+
+        foreach ($patterns as $pattern) {
+            // Note: This uses a simple approach. For production with Redis,
+            // consider using Cache::tags() for more efficient cache invalidation
+            $keys = Cache::get($pattern, []);
+            if (is_array($keys)) {
+                foreach ($keys as $key) {
+                    Cache::forget($key);
+                }
+            }
+        }
+
+        $this->log('Analytics cache cleared', [
+            'workspace_id' => $workspaceId,
+        ]);
+    }
+
+    /**
+     * Clear all analytics caches.
+     *
+     * Useful for maintenance or when cache needs to be fully refreshed.
+     *
+     * @return void
+     */
+    public function clearAllCaches(): void
+    {
+        Cache::flush();
+        
+        $this->log('All analytics caches cleared');
     }
 }

@@ -43,6 +43,7 @@ final class OAuthService extends BaseService
             SocialPlatform::FACEBOOK => $this->buildFacebookAuthUrl($state),
             SocialPlatform::INSTAGRAM => $this->buildInstagramAuthUrl($state),
             SocialPlatform::TWITTER => $this->buildTwitterAuthUrl($state),
+            SocialPlatform::YOUTUBE => $this->buildYouTubeAuthUrl($state),
             SocialPlatform::WHATSAPP => $this->buildWhatsAppAuthUrl($state),
         };
 
@@ -83,6 +84,14 @@ final class OAuthService extends BaseService
 
         // Clear the used state
         Cache::forget($cacheKey);
+
+        // For Twitter, retrieve and store code verifier in request context
+        if ($platform === SocialPlatform::TWITTER) {
+            $codeVerifier = Cache::pull('twitter_code_verifier:' . $state);
+            if ($codeVerifier) {
+                request()->merge(['twitter_code_verifier' => $codeVerifier]);
+            }
+        }
 
         // Exchange code for tokens via platform adapter
         $adapter = $this->adapterFactory->create($platform);
@@ -271,6 +280,21 @@ final class OAuthService extends BaseService
         ];
 
         return 'https://www.facebook.com/v19.0/dialog/oauth?' . http_build_query($params);
+    }
+
+    private function buildYouTubeAuthUrl(string $state): string
+    {
+        $params = [
+            'client_id' => config('services.youtube.client_id', ''),
+            'redirect_uri' => $this->getCallbackUrl(SocialPlatform::YOUTUBE),
+            'response_type' => 'code',
+            'scope' => implode(' ', SocialPlatform::YOUTUBE->oauthScopes()),
+            'state' => $state,
+            'access_type' => 'offline',
+            'prompt' => 'consent',
+        ];
+
+        return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
     }
 
     // ==========================================================================

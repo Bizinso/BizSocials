@@ -3,10 +3,10 @@ export const API_URL = 'http://localhost:8080/api/v1'
 export const AUTH_TOKEN_KEY = 'auth_token'
 
 export const ACCOUNTS = {
-  owner: { email: 'john.owner@acme.example.com', password: 'User@1234' },
-  admin: { email: 'jane.admin@acme.example.com', password: 'User@1234' },
-  member: { email: 'bob.member@acme.example.com', password: 'User@1234' },
-  superAdmin: { email: 'admin@bizinso.com', password: 'Admin@1234' },
+  owner: { email: 'john.owner@acme.example.com', password: 'password' },
+  admin: { email: 'jane.admin@acme.example.com', password: 'password' },
+  member: { email: 'bob.member@acme.example.com', password: 'password' },
+  superAdmin: { email: 'admin@bizinso.com', password: 'BizS0c!als@2026!' },
 } as const
 
 export const TIMEOUTS = {
